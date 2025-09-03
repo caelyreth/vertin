@@ -22,6 +22,6 @@
     "eslint.config.ts",
     "**/dist",
     "**/vitest.config.ts",
-    "**/rolldown.config.ts"
+    "**/tsdown.config.ts"
   ]
 }

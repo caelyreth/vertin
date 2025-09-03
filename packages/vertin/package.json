@@ -32,7 +32,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "rolldown -c rolldown.config.ts",
+    "build": "tsdown",
     "prepack": "bun run build"
   }
 }
