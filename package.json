@@ -16,12 +16,12 @@
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^5.2.1",
+    "@antfu/eslint-config": "^5.2.2",
     "@types/bun": "^1.2.21",
     "@vitest/coverage-v8": "3.2.4",
     "@vitest/ui": "3.2.4",
     "bun": "^1.2.21",
-    "eslint": "^9.34.0",
+    "eslint": "^9.35.0",
     "jiti": "^2.5.1",
     "lint-staged": "^16.1.6",
     "simple-git-hooks": "^2.13.1",
