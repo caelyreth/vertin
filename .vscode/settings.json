@@ -1,10 +1,15 @@
 {
+  // Enable TSGo
+  "typescript.experimental.useTsgo": true,
+  // Disable the default formatter, use eslint instead
   "prettier.enable": false,
   "editor.formatOnSave": false,
+  // Auto fix
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "never"
   },
+  // Silent the stylistic rules in your IDE, but still auto fix them
   "eslint.rules.customizations": [
     {
       "rule": "style/*",
@@ -57,18 +62,15 @@
       "fixable": true
     }
   ],
+  // Enable eslint for all supported languages
   "eslint.validate": [
     "javascript",
     "typescript",
+    "html",
     "markdown",
     "json",
     "jsonc",
-    "yml",
+    "css",
     "yaml"
-  ],
-  // workspace dictionary
-  "cSpell.words": [
-    "rolldown",
-    "vertin"
   ]
 }
