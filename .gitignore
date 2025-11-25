@@ -4,6 +4,7 @@ node_modules
 # development
 dist
 coverage
+references
 
 # os related
 .DS_Store
