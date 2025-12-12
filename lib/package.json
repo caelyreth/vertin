@@ -28,6 +28,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown"
+    "dev": "tsdown --watch",
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit"
   }
 }

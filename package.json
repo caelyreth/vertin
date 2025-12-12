@@ -1,5 +1,6 @@
 {
   "type": "module",
+  "packageManager": "bun@1.3.4",
   "author": "Kohane <i@kept.to>",
   "license": "MPL-2.0",
   "workspaces": [
@@ -7,16 +8,18 @@
   ],
   "scripts": {
     "postinstall": "simple-git-hooks",
-    "build": "bun run --filter vertin build"
+    "dev": "bun run --filter vertin dev",
+    "build": "bun run --filter vertin build",
+    "typecheck": "bun run --filter vertin typecheck"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^6.2.0",
-    "bun": "^1.3.3",
+    "@antfu/eslint-config": "^6.6.1",
+    "bun": "^1.3.4",
     "eslint": "^9.39.1",
     "jiti": "^2.6.1",
     "lint-staged": "^16.2.7",
     "simple-git-hooks": "^2.13.1",
-    "tsdown": "^0.16.6",
+    "tsdown": "^0.16.8",
     "typescript": "^5.9.3"
   },
   "simple-git-hooks": {
