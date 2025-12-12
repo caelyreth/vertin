@@ -2,9 +2,12 @@
   "type": "module",
   "author": "Kohane <i@kept.to>",
   "license": "MPL-2.0",
+  "workspaces": [
+    "lib"
+  ],
   "scripts": {
     "postinstall": "simple-git-hooks",
-    "build": "bun run --filter '*' build"
+    "build": "bun run --filter vertin build"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.2.0",
