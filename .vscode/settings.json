@@ -72,5 +72,9 @@
     "jsonc",
     "css",
     "yaml"
+  ],
+  // Workspace dictionary
+  "cSpell.words": [
+    "vertin"
   ]
 }
