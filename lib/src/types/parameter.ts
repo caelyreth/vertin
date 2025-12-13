@@ -1,5 +1,4 @@
 import type { _Resolve, Resolver } from './resolver'
-import type { _KeyCount } from './utils'
 
 /**
  * Base parameter specification.
@@ -126,12 +125,10 @@ export interface _Parsed<
   F = FlagRecord,
 > {
   args: A extends undefined ? never
-    : _KeyCount<NonNullable<A>> extends 0 ? never
-      : _ParsedArgument<NonNullable<A>>
+    : _ParsedArgument<NonNullable<A>>
 
   flags: F extends undefined ? never
-    : _KeyCount<NonNullable<A>> extends 0 ? never
-      : _ParsedFlag<NonNullable<A>>
+    : _ParsedFlag<NonNullable<F>>
 
   // TODO: unknown flags and arguments
 }
