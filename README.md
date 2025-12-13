@@ -14,6 +14,6 @@ The core philosophy is to reduce your cognitive load and lower the cost of archi
 
 `vertin`’s design philosophy is heavily inspired by [CLIG](https://clig.dev/) (Command Line Interface Guidelines). Its built-in API allows you to directly construct a CLI program that adheres to these widely accepted principles.
 
-The deliberate exclusion of a plugin system enables deep integration. A single, unified schema is all that's required to generate a wide range of features, including _comprehensive help information_, _precise error messages_, and _automatic Shell completions_.
+The deliberate exclusion of a plugin system enables deep integration. A single, unified schema is all that's required to generate a wide range of features, including _comprehensive help information_, _precise error messages_, and _automatic shell completions_.
 
-Despite its ntegrated feature set, `vertin` does not have a complex API. Due to its opinionated nature, the API remains incredibly simple and declarative, often feeling more like defining a configuration file than writing complex application logic.
+Despite its integrated feature set, `vertin` does not have a complex API. Due to its opinionated nature, the API remains incredibly simple and declarative, often feeling more like defining a configuration file than writing complex application logic.
