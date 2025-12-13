@@ -1,7 +1,11 @@
-import type { App } from './types/app'
-import type { Command } from './types/command'
-import type { Constraint } from './types/constraint'
-import type { _ParameterMap, ArgumentRecord, FlagRecord } from './types/parameter'
+import type {
+  _ParameterMap,
+  App,
+  ArgumentRecord,
+  Command,
+  Constraint,
+  FlagRecord,
+} from './types'
 
 /**
  * Helper function to create a constraint.
