@@ -89,7 +89,8 @@ export type _GetResolver<T extends Argument> = T['type'] extends Resolver
 export type _ParsedArgument<
   T extends ArgumentRecord,
 > = {
-  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>> ? _Resolve<_GetResolver<T[K]>>
+  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>>
+    ? _Resolve<_GetResolver<T[K]>>
     : T[K]['optional'] extends true ? _Resolve<_GetResolver<T[K]>> | undefined
       : _Resolve<_GetResolver<T[K]>>
 }
@@ -100,7 +101,8 @@ export type _ParsedArgument<
 export type _ParsedFlag<
   T extends FlagRecord,
 > = {
-  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>> ? _Resolve<_GetResolver<T[K]>>
+  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>>
+    ? _Resolve<_GetResolver<T[K]>>
     : T[K]['required'] extends true ? _Resolve<_GetResolver<T[K]>>
       : _Resolve<_GetResolver<T[K]>> | undefined
 }
