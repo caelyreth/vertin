@@ -1,11 +1,12 @@
 import type { _Resolve, Resolver } from './resolver'
 
 /**
- * Argument parameter specification.
+ * Base parameter specification.
  *
- * @template T Resolver used to parse the raw string value.
+ * @private
+ * @template T {@link Resolver} used to parse raw string value.
  */
-export interface Argument<T extends Resolver = Resolver> {
+interface BaseParameter<T extends Resolver = Resolver> {
   /**
    * {@link Resolver} used to parse raw string value.
    *
@@ -15,21 +16,28 @@ export interface Argument<T extends Resolver = Resolver> {
   readonly type?: T
 
   /**
-   * Brief description of argument parameter.
+   * Brief description of parameter.
    */
   readonly desc?: string
 
+  /**
+   * Fallback value if parameter field omitted.
+   */
+  readonly fallback?: _Resolve<T>
+}
+
+/**
+ * Argument parameter specification.
+ *
+ * @template T {@link Resolver} used to parse the raw string value.
+ */
+export interface Argument<T extends Resolver = Resolver> extends BaseParameter<T> {
   /**
    * Whether the argument field is optional.
    *
    * @default false
    */
   readonly optional?: boolean
-
-  /**
-   * Fallback value if argument field omitted.
-   */
-  readonly fallback?: _Resolve<T>
 }
 
 /**
@@ -37,31 +45,13 @@ export interface Argument<T extends Resolver = Resolver> {
  *
  * @template T {@link Resolver} used to parse raw string value.
  */
-export interface Flag<T extends Resolver = Resolver> {
-  /**
-   * {@link Resolver} used to parse raw string value.
-   *
-   * @default
-   * `String`
-   */
-  readonly type?: T
-
-  /**
-   * Brief description of argument parameter.
-   */
-  readonly desc?: string
-
+export interface Flag<T extends Resolver = Resolver> extends BaseParameter<T> {
   /**
    * Whether the flag field is required.
    *
    * @default false
    */
   readonly required?: boolean
-
-  /**
-   * Fallback value if flag field omitted.
-   */
-  readonly fallback?: _Resolve<T>
 
   /**
    * Alias for the flag field.
