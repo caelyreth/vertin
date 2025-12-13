@@ -1,3 +1,4 @@
+import type { Constraint } from './constraint'
 import type { _Resolve, Resolver } from './resolver'
 
 /**
@@ -24,6 +25,11 @@ interface _BaseParameter<T extends Resolver = Resolver> {
    * Fallback value if parameter field omitted.
    */
   readonly fallback?: _Resolve<T>
+
+  /**
+   *
+   */
+  readonly constr?: Constraint<_Resolve<T>>
 }
 
 /**
@@ -88,8 +94,9 @@ export type _GetResolver<T extends Argument> = T['resolver'] extends Resolver
  * Used to implement spec-level inference.
  */
 export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
-  [K in keyof T]: Omit<T[K], 'fallback'> & {
+  [K in keyof T]: Omit<T[K], 'fallback' | 'constr'> & {
     fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
+    constr?: Constraint<NoInfer<_Resolve<_GetResolver<T[K]>>>>
   }
 }
 

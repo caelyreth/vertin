@@ -1,6 +1,16 @@
 import type { App } from './types/app'
 import type { Command } from './types/command'
+import type { Constraint } from './types/constraint'
 import type { _ParameterMap, ArgumentRecord, FlagRecord } from './types/parameter'
+
+/**
+ * Helper function to create a constraint.
+ */
+export function constr<T>(
+  validator: Constraint<T>,
+): Constraint<T> {
+  return validator
+}
 
 /**
  * Helper function to create an record of argument parameters.
