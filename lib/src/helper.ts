@@ -1,3 +1,4 @@
+import type { App } from './types/app'
 import type { Command } from './types/command'
 import type { _GetResolver, Argument, Flag } from './types/parameter'
 import type { _Resolve } from './types/resolver'
@@ -56,5 +57,18 @@ export function cmd<
   return {
     ...spec,
     handler,
+  }
+}
+
+/**
+ * Helper function to create an application.
+ */
+export function app(
+  spec: Omit<App, 'config'>,
+  config?: App['config'],
+): App {
+  return {
+    ...spec,
+    config,
   }
 }
