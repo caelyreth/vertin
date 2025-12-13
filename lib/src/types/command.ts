@@ -7,7 +7,7 @@ export interface Command {
   /**
    * Brief description of command.
    */
-  desc?: string
+  desc: string
 
   /**
    * Arguments of the command.
