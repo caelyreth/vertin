@@ -14,7 +14,7 @@ interface _BaseParameter<T extends Resolver = Resolver> {
    * @default
    * `String`
    */
-  readonly type?: T
+  readonly resolver?: T
 
   /**
    * Brief description of parameter.
@@ -79,8 +79,8 @@ export type FlagRecord = Record<string, Flag>
  *
  * @private
  */
-export type _GetResolver<T extends Argument> = T['type'] extends Resolver
-  ? T['type']
+export type _GetResolver<T extends Argument> = T['resolver'] extends Resolver
+  ? T['resolver']
   : StringConstructor
 
 /**
