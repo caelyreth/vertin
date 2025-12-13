@@ -1,8 +1,8 @@
-import type { _Parsed, Argument, Flag } from './parameter'
+import type { _Parsed, ArgumentRecord, FlagRecord } from './parameter'
 
 export type HandlerContext<
-  A extends Record<string, Argument>,
-  F extends Record<string, Flag>,
+  A extends ArgumentRecord,
+  F extends FlagRecord,
 > = _Parsed<A, F> & {
   // TODO: more context features
 }
@@ -11,8 +11,8 @@ export type HandlerContext<
  * Command specification.
  */
 export interface Command<
-  A extends Record<string, Argument> = Record<string, any>,
-  F extends Record<string, Flag> = Record<string, any>,
+  A extends ArgumentRecord = ArgumentRecord,
+  F extends FlagRecord = FlagRecord,
 > {
   /**
    * Brief description of command.

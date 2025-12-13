@@ -64,6 +64,16 @@ export interface Flag<T extends Resolver = Resolver> extends _BaseParameter<T> {
 }
 
 /**
+ * Record type for argument and flag specifications.
+ */
+export type ArgumentRecord = Record<string, Argument>
+
+/**
+ * Record type for argument and flag specifications.
+ */
+export type FlagRecord = Record<string, Flag>
+
+/**
  * Utility type to extract resolver type from an parameter specification.
  * It's used to implement the default string resolver inference.
  *
@@ -77,7 +87,7 @@ export type _GetResolver<T extends Argument> = T['type'] extends Resolver
  *
  */
 export type _ParsedArgument<
-  T extends Record<string, Argument>,
+  T extends ArgumentRecord,
 > = {
   [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>> ? _Resolve<_GetResolver<T[K]>>
     : T[K]['optional'] extends true ? _Resolve<_GetResolver<T[K]>> | undefined
@@ -88,7 +98,7 @@ export type _ParsedArgument<
  *
  */
 export type _ParsedFlag<
-  T extends Record<string, Flag>,
+  T extends FlagRecord,
 > = {
   [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>> ? _Resolve<_GetResolver<T[K]>>
     : T[K]['required'] extends true ? _Resolve<_GetResolver<T[K]>>
@@ -99,8 +109,8 @@ export type _ParsedFlag<
  *
  */
 export interface _Parsed<
-  A = Record<string, Argument>,
-  F = Record<string, Flag>,
+  A = ArgumentRecord,
+  F = FlagRecord,
 > {
   args: A extends undefined ? never
     : _KeyCount<NonNullable<A>> extends 0 ? never
