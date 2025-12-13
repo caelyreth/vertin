@@ -8,7 +8,7 @@ import type { _Resolve } from './types/resolver'
  */
 export function arg<
   const T extends Record<string, Argument> & {
-    [K in keyof T]: {
+    [K in keyof T]: Omit<T[K], 'fallback'> & {
       fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
     }
   },
@@ -23,7 +23,7 @@ export function arg<
  */
 export function flag<
   const T extends Record<string, Flag> & {
-    [K in keyof T]: {
+    [K in keyof T]: Omit<T[K], 'fallback'> & {
       fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
     }
   },
@@ -38,22 +38,22 @@ export function flag<
  */
 export function cmd<
   const A extends Record<string, Argument> & {
-    [K in keyof A]: {
+    [K in keyof A]: Omit<A[K], 'fallback'> & {
       fallback?: NoInfer<_Resolve<_GetResolver<A[K]>>>
     }
   },
   const F extends Record<string, Flag> & {
-    [K in keyof F]: {
+    [K in keyof F]: Omit<F[K], 'fallback'> & {
       fallback?: NoInfer<_Resolve<_GetResolver<F[K]>>>
     }
   },
 >(
-  spec: Omit<Command, 'handler'> & {
+  spec: Omit<Command<A, F>, 'handler'> & {
     args?: A
     flags?: F
   },
-  handler: Command['handler'],
-): Command {
+  handler: Command<A, F>['handler'],
+): Command<A, F> {
   return {
     ...spec,
     handler,

@@ -1,4 +1,5 @@
 import type { _Resolve, Resolver } from './resolver'
+import type { _KeyCount } from './utils'
 
 /**
  * Base parameter specification.
@@ -6,7 +7,7 @@ import type { _Resolve, Resolver } from './resolver'
  * @private
  * @template T {@link Resolver} used to parse raw string value.
  */
-interface BaseParameter<T extends Resolver = Resolver> {
+interface _BaseParameter<T extends Resolver = Resolver> {
   /**
    * {@link Resolver} used to parse raw string value.
    *
@@ -31,7 +32,7 @@ interface BaseParameter<T extends Resolver = Resolver> {
  *
  * @template T {@link Resolver} used to parse the raw string value.
  */
-export interface Argument<T extends Resolver = Resolver> extends BaseParameter<T> {
+export interface Argument<T extends Resolver = Resolver> extends _BaseParameter<T> {
   /**
    * Whether the argument field is optional.
    *
@@ -45,7 +46,7 @@ export interface Argument<T extends Resolver = Resolver> extends BaseParameter<T
  *
  * @template T {@link Resolver} used to parse raw string value.
  */
-export interface Flag<T extends Resolver = Resolver> extends BaseParameter<T> {
+export interface Flag<T extends Resolver = Resolver> extends _BaseParameter<T> {
   /**
    * Whether the flag field is required.
    *
@@ -71,3 +72,43 @@ export interface Flag<T extends Resolver = Resolver> extends BaseParameter<T> {
 export type _GetResolver<T extends Argument> = T['type'] extends Resolver
   ? T['type']
   : StringConstructor
+
+/**
+ *
+ */
+export type _ParsedArgument<
+  T extends Record<string, Argument>,
+> = {
+  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>> ? _Resolve<_GetResolver<T[K]>>
+    : T[K]['optional'] extends true ? _Resolve<_GetResolver<T[K]>> | undefined
+      : _Resolve<_GetResolver<T[K]>>
+}
+
+/**
+ *
+ */
+export type _ParsedFlag<
+  T extends Record<string, Flag>,
+> = {
+  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>> ? _Resolve<_GetResolver<T[K]>>
+    : T[K]['required'] extends true ? _Resolve<_GetResolver<T[K]>>
+      : _Resolve<_GetResolver<T[K]>> | undefined
+}
+
+/**
+ *
+ */
+export interface _Parsed<
+  A = Record<string, Argument>,
+  F = Record<string, Flag>,
+> {
+  args: A extends undefined ? never
+    : _KeyCount<NonNullable<A>> extends 0 ? never
+      : _ParsedArgument<NonNullable<A>>
+
+  flags: F extends undefined ? never
+    : _KeyCount<NonNullable<A>> extends 0 ? never
+      : _ParsedFlag<NonNullable<A>>
+
+  // TODO: unknown flags and arguments
+}
