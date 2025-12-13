@@ -1,17 +1,12 @@
 import type { App } from './types/app'
 import type { Command } from './types/command'
-import type { _GetResolver, ArgumentRecord, FlagRecord } from './types/parameter'
-import type { _Resolve } from './types/resolver'
+import type { _ParameterMap, ArgumentRecord, FlagRecord } from './types/parameter'
 
 /**
  * Helper function to create an record of argument parameters.
  */
 export function arg<
-  const T extends ArgumentRecord & {
-    [K in keyof T]: Omit<T[K], 'fallback'> & {
-      fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
-    }
-  },
+  const T extends ArgumentRecord & _ParameterMap<T>,
 >(
   record: T,
 ): T {
@@ -22,11 +17,7 @@ export function arg<
  * Helper function to create an record of flag parameters.
  */
 export function flag<
-  const T extends FlagRecord & {
-    [K in keyof T]: Omit<T[K], 'fallback'> & {
-      fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
-    }
-  },
+  const T extends FlagRecord & _ParameterMap<T>,
 >(
   record: T,
 ): T {
@@ -37,16 +28,8 @@ export function flag<
  * Helper function to create a command.
  */
 export function cmd<
-  const A extends ArgumentRecord & {
-    [K in keyof A]: Omit<A[K], 'fallback'> & {
-      fallback?: NoInfer<_Resolve<_GetResolver<A[K]>>>
-    }
-  },
-  const F extends FlagRecord & {
-    [K in keyof F]: Omit<F[K], 'fallback'> & {
-      fallback?: NoInfer<_Resolve<_GetResolver<F[K]>>>
-    }
-  },
+  const A extends ArgumentRecord & _ParameterMap<A>,
+  const F extends FlagRecord & _ParameterMap<F>,
 >(
   spec: Omit<Command<A, F>, 'handler'> & {
     args?: A

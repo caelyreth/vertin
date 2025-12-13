@@ -84,7 +84,18 @@ export type _GetResolver<T extends Argument> = T['resolver'] extends Resolver
   : StringConstructor
 
 /**
+ * Utility type to map a parameter record to a parameter map.
  *
+ * Used to implement spec-level inference.
+ */
+export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
+  [K in keyof T]: Omit<T[K], 'fallback'> & {
+    fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
+  }
+}
+
+/**
+ * Utility type to parse argument record to a parsed argument record.
  */
 export type _ParsedArgument<
   T extends ArgumentRecord,
@@ -96,7 +107,7 @@ export type _ParsedArgument<
 }
 
 /**
- *
+ * Utility type to parse flag record to a parsed flag record.
  */
 export type _ParsedFlag<
   T extends FlagRecord,
@@ -108,7 +119,7 @@ export type _ParsedFlag<
 }
 
 /**
- *
+ * Utility type to parse argument and flag record to a parsed argument and flag record.
  */
 export interface _Parsed<
   A = ArgumentRecord,
