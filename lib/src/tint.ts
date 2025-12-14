@@ -23,37 +23,37 @@ interface StylerFunction {
   (strings: TemplateStringsArray, ...values: any[]): string
 }
 
-export interface ChainedStyler extends StylerFunction {
+export interface Styler extends StylerFunction {
   // Styles
-  readonly bold: ChainedStyler
-  readonly dim: ChainedStyler
-  readonly italic: ChainedStyler
-  readonly underline: ChainedStyler
-  readonly inverse: ChainedStyler
-  readonly hidden: ChainedStyler
-  readonly strikethrough: ChainedStyler
+  readonly bold: Styler
+  readonly dim: Styler
+  readonly italic: Styler
+  readonly underline: Styler
+  readonly inverse: Styler
+  readonly hidden: Styler
+  readonly strikethrough: Styler
 
   // Foreground Colors
-  readonly black: ChainedStyler
-  readonly red: ChainedStyler
-  readonly green: ChainedStyler
-  readonly yellow: ChainedStyler
-  readonly blue: ChainedStyler
-  readonly magenta: ChainedStyler
-  readonly cyan: ChainedStyler
-  readonly white: ChainedStyler
-  readonly gray: ChainedStyler
-  readonly grey: ChainedStyler
+  readonly black: Styler
+  readonly red: Styler
+  readonly green: Styler
+  readonly yellow: Styler
+  readonly blue: Styler
+  readonly magenta: Styler
+  readonly cyan: Styler
+  readonly white: Styler
+  readonly gray: Styler
+  readonly grey: Styler
 
   // Background Colors
-  readonly bgBlack: ChainedStyler
-  readonly bgRed: ChainedStyler
-  readonly bgGreen: ChainedStyler
-  readonly bgYellow: ChainedStyler
-  readonly bgBlue: ChainedStyler
-  readonly bgMagenta: ChainedStyler
-  readonly bgCyan: ChainedStyler
-  readonly bgWhite: ChainedStyler
+  readonly bgBlack: Styler
+  readonly bgRed: Styler
+  readonly bgGreen: Styler
+  readonly bgYellow: Styler
+  readonly bgBlue: Styler
+  readonly bgMagenta: Styler
+  readonly bgCyan: Styler
+  readonly bgWhite: Styler
 }
 
 // MARK: - Constants
@@ -123,7 +123,7 @@ for (const [name, [open, close]] of Object.entries(STYLE)) {
 }
 
 // MARK: - Factory
-function createStyler(codes: StyleCode[] = []): ChainedStyler {
+function createStyler(codes: StyleCode[] = []): Styler {
   const openSeq = codes.map(c => `${ESC}${c.open}m`).join('')
   const closeSeq = codes.slice().reverse().map(c => `${ESC}${c.close}m`).join('')
 
@@ -145,7 +145,7 @@ function createStyler(codes: StyleCode[] = []): ChainedStyler {
     return apply(rawText)
   }
 
-  const stylerFn = templateTag as ChainedStyler
+  const stylerFn = templateTag as Styler
 
   Object.defineProperty(stylerFn, 'call', { value: apply, enumerable: false })
 
@@ -153,7 +153,7 @@ function createStyler(codes: StyleCode[] = []): ChainedStyler {
     const code = styleDefinitions[name]
 
     Object.defineProperty(stylerFn, name, {
-      get: (): ChainedStyler => {
+      get: (): Styler => {
         const newCodes = [...codes, code]
         return createStyler(newCodes)
       },
@@ -169,39 +169,39 @@ function createStyler(codes: StyleCode[] = []): ChainedStyler {
 const baseColor = createStyler()
 
 // Foreground Colors
-export const black: ChainedStyler = baseColor.black
-export const red: ChainedStyler = baseColor.red
-export const green: ChainedStyler = baseColor.green
-export const yellow: ChainedStyler = baseColor.yellow
-export const blue: ChainedStyler = baseColor.blue
-export const magenta: ChainedStyler = baseColor.magenta
-export const cyan: ChainedStyler = baseColor.cyan
-export const white: ChainedStyler = baseColor.white
-export const gray: ChainedStyler = baseColor.gray
-export const grey: ChainedStyler = baseColor.grey
+export const black: Styler = baseColor.black
+export const red: Styler = baseColor.red
+export const green: Styler = baseColor.green
+export const yellow: Styler = baseColor.yellow
+export const blue: Styler = baseColor.blue
+export const magenta: Styler = baseColor.magenta
+export const cyan: Styler = baseColor.cyan
+export const white: Styler = baseColor.white
+export const gray: Styler = baseColor.gray
+export const grey: Styler = baseColor.grey
 
 // Background Colors
-export const bgBlack: ChainedStyler = baseColor.bgBlack
-export const bgRed: ChainedStyler = baseColor.bgRed
-export const bgGreen: ChainedStyler = baseColor.bgGreen
-export const bgYellow: ChainedStyler = baseColor.bgYellow
-export const bgBlue: ChainedStyler = baseColor.bgBlue
-export const bgMagenta: ChainedStyler = baseColor.bgMagenta
-export const bgCyan: ChainedStyler = baseColor.bgCyan
-export const bgWhite: ChainedStyler = baseColor.bgWhite
+export const bgBlack: Styler = baseColor.bgBlack
+export const bgRed: Styler = baseColor.bgRed
+export const bgGreen: Styler = baseColor.bgGreen
+export const bgYellow: Styler = baseColor.bgYellow
+export const bgBlue: Styler = baseColor.bgBlue
+export const bgMagenta: Styler = baseColor.bgMagenta
+export const bgCyan: Styler = baseColor.bgCyan
+export const bgWhite: Styler = baseColor.bgWhite
 
 // Styles
-export const bold: ChainedStyler = baseColor.bold
-export const dim: ChainedStyler = baseColor.dim
-export const italic: ChainedStyler = baseColor.italic
-export const underline: ChainedStyler = baseColor.underline
-export const inverse: ChainedStyler = baseColor.inverse
-export const hidden: ChainedStyler = baseColor.hidden
-export const strikethrough: ChainedStyler = baseColor.strikethrough
+export const bold: Styler = baseColor.bold
+export const dim: Styler = baseColor.dim
+export const italic: Styler = baseColor.italic
+export const underline: Styler = baseColor.underline
+export const inverse: Styler = baseColor.inverse
+export const hidden: Styler = baseColor.hidden
+export const strikethrough: Styler = baseColor.strikethrough
 
 // Semantic Aliases
-export const success: ChainedStyler = green
-export const warning: ChainedStyler = yellow
-export const error: ChainedStyler = red
-export const info: ChainedStyler = blue
-export const debug: ChainedStyler = gray
+export const success: Styler = green
+export const warning: Styler = yellow
+export const error: Styler = red
+export const info: Styler = blue
+export const debug: Styler = gray
