@@ -84,11 +84,11 @@ function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
   fmt.shift()
 
   if (diag.expected) {
-    displayGroup(magenta`Expected: `, diag.expected, fmt)
+    displayGroup(magenta.bold`Expected `, diag.expected, fmt)
   }
 
   if (diag.hint) {
-    displayGroup(blue`Hint: `, diag.hint, fmt)
+    displayGroup(blue.bold`Hint `, diag.hint, fmt)
   }
 }
 
