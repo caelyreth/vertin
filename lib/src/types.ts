@@ -6,6 +6,83 @@
  * @license MPL-2.0
  */
 
+// MARK: - Collector
+
+/**
+ *
+ */
+export type Severity = 'info' | 'warn' | 'error'
+
+/**
+ *
+ */
+export interface Diagnostics {
+  /**
+   *
+   */
+  readonly source: string | string[]
+
+  /**
+   *
+   */
+  readonly offset: number
+
+  /**
+   *
+   */
+  readonly markup: string
+
+  /**
+   *
+   */
+  readonly expected?: string[]
+
+  /**
+   *
+   */
+  readonly hint?: string[]
+}
+
+/**
+ *
+ */
+export interface Message {
+  /**
+   *
+   */
+  readonly level: Severity
+
+  /**
+   *
+   */
+  readonly desc: string
+
+  /**
+   *
+   */
+  readonly diag?: Diagnostics
+}
+
+/**
+ *
+ */
+export interface Collector {
+  /**
+   *
+   */
+  log: (msg: Message) => void
+
+  /**
+   *
+   */
+  submit: (msg: Message) => void
+
+  /**
+   *
+   */
+  collect: () => void
+}
+
 // MARK: - Resolver
 
 /**
