@@ -42,8 +42,8 @@ export interface Styler extends StylerFunction {
   readonly magenta: Styler
   readonly cyan: Styler
   readonly white: Styler
-  readonly gray: Styler
   readonly grey: Styler
+  readonly normal: Styler
 
   // Background Colors
   readonly bgBlack: Styler
@@ -70,6 +70,7 @@ const FG: Readonly<Record<string, number>> = {
   cyan: 36,
   white: 37,
   grey: 90,
+  normal: 39,
 } as const
 
 const BG: Readonly<Record<string, number>> = {
@@ -177,8 +178,8 @@ export const blue: Styler = baseColor.blue
 export const magenta: Styler = baseColor.magenta
 export const cyan: Styler = baseColor.cyan
 export const white: Styler = baseColor.white
-export const gray: Styler = baseColor.gray
 export const grey: Styler = baseColor.grey
+export const normal: Styler = baseColor.normal
 
 // Background Colors
 export const bgBlack: Styler = baseColor.bgBlack
