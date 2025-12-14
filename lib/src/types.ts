@@ -335,6 +335,11 @@ export interface Command<
   flags?: F
 
   /**
+   * Sub-commands of the command.
+   */
+  sub?: Record<string, Command>
+
+  /**
    * Handler function of the command.
    *
    * @todo complete handler system, currently it's just a placeholder.
