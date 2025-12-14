@@ -67,7 +67,7 @@ function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
       else {
         break
       }
-      if (i < diag.source.length - 1) {
+      if (i < diag.source.length - 1 || i === diag.offset) {
         markupLine += ' '
       }
     }
@@ -84,7 +84,7 @@ function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
 
   fmt.line(sourceLine)
   if (markupLine !== '') {
-    markupLine += ` ${diag.markup}`
+    markupLine += diag.markup
     fmt.line(markupLine)
   }
 
