@@ -41,14 +41,13 @@ interface Formatter {
  */
 export function createFormatter(indentUnit: string = '  '): Formatter {
   const output: string[] = []
-  let level: number = 0
+  let level = 0
 
   const getPrefix = (): string => {
     return indentUnit.repeat(level)
   }
 
   return {
-
     line: (raw: string) => {
       const indentedLine = getPrefix() + raw
       if (output.length > 0) {
@@ -56,25 +55,21 @@ export function createFormatter(indentUnit: string = '  '): Formatter {
       }
       output.push(indentedLine)
     },
-
     emptyLine: () => {
       if (output.length > 0) {
         output.push('\n')
       }
       output.push('')
     },
-
     indent: () => {
       level += 1
     },
-
     shift: () => {
       if (level <= 0) {
         level = 0
       }
       level -= 1
     },
-
     raw: () => {
       return output.join('')
     },
