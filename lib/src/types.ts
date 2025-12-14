@@ -303,3 +303,31 @@ export interface App {
    */
   config?: AppConfig
 }
+
+// MARK: - Utilities
+
+/**
+ * Represents a successful operation.
+ *
+ * @template T The type of the successful value.
+ */
+export interface Success<T> {
+  readonly success: true
+  readonly value: T
+}
+
+/**
+ * Represents a failed operation.
+ * @template E The type of the error value.
+ */
+export interface Failure<E> {
+  readonly success: false
+  readonly errors: E
+}
+
+/**
+ * A union type that can be either Success<T> or Failure<E>.
+ * @template T The type of the successful value.
+ * @template E The type of the error value.
+ */
+export type Result<T, E = string[]> = Success<T> | Failure<E>
