@@ -1,3 +1,11 @@
+/**
+ * @file Utility functions across Vertin framework.
+ *
+ * @copyright Kohane 2025
+ * @author Kohane <i@kept.to>
+ * @license MPL-2.0
+ */
+
 import type { Failure, Result, Success } from './types'
 
 // MARK: - Result
