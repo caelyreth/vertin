@@ -1,6 +1,9 @@
 /**
  * @file Console format output utilities.
  *
+ * Formatter is a utility in the Vertin framework; it can be used to
+ * create formats like indentation, etc., easily.
+ *
  * @copyright Kohane 2025
  * @author Kohane <i@kept.to>
  * @license MPL-2.0

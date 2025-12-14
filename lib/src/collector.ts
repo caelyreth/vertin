@@ -1,6 +1,13 @@
 /**
  * @file Message collector subsystem.
  *
+ * Collector is a main concept in the Vertin framework; it is mainly
+ * Responsible for the non-throwable error handling inside the framework.
+ * It is also responsible for the message formatting and display.
+ *
+ * These APIs could be used in many parts of the framework by developers.
+ * It will be injected into the handler context, constraint context, etc.
+ *
  * @copyright Kohane 2025
  * @author Kohane <i@kept.to>
  * @license MPL-2.0

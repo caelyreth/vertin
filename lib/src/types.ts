@@ -1,6 +1,10 @@
 /**
  * @file Essential types across Vertin framework.
  *
+ * This file contains all shared type across the framework Vertin.
+ * Those types with `_` prefix are internal types, although they are
+ * exported, they are not intended to be used directly by developers.
+ *
  * @copyright Kohane 2025
  * @author Kohane <i@kept.to>
  * @license MPL-2.0

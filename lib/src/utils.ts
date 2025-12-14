@@ -1,6 +1,8 @@
 /**
  * @file Utility functions across Vertin framework.
  *
+ * This file contains all utility functions across the framework Vertin.
+ *
  * @copyright Kohane 2025
  * @author Kohane <i@kept.to>
  * @license MPL-2.0

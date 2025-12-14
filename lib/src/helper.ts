@@ -1,3 +1,14 @@
+/**
+ * @file Helper functions to create specifications.
+ *
+ * Vertin uses a spec-first pattern, these helper functions are used to
+ * create specifications easily with type inference.
+ *
+ * @copyright Kohane 2025
+ * @author Kohane <i@kept.to>
+ * @license MPL-2.0
+ */
+
 import type {
   _ParameterMap,
   App,
