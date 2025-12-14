@@ -32,6 +32,7 @@ export interface Styler extends StylerFunction {
   readonly inverse: Styler
   readonly hidden: Styler
   readonly strikethrough: Styler
+  readonly reset: Styler
 
   // Foreground Colors
   readonly black: Styler
@@ -93,6 +94,7 @@ const STYLE: Readonly<Record<string, [number, number]>> = {
   inverse: [7, 27],
   hidden: [8, 28],
   strikethrough: [9, 29],
+  reset: [0, 0],
 } as const
 
 // MARK: - Once Effects
@@ -199,10 +201,11 @@ export const underline: Styler = baseColor.underline
 export const inverse: Styler = baseColor.inverse
 export const hidden: Styler = baseColor.hidden
 export const strikethrough: Styler = baseColor.strikethrough
+export const reset: Styler = baseColor.reset
 
 // Semantic Aliases
 export const success: Styler = green
 export const warning: Styler = yellow
 export const error: Styler = red
 export const info: Styler = blue
-export const debug: Styler = gray
+export const debug: Styler = grey
