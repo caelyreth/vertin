@@ -9,7 +9,7 @@
 /**
  * Interface for the stateful Formatter object returned by createFormatter.
  */
-interface Formatter {
+export interface Formatter {
   /**
    * Adds a line of text to the output, applying the current indentation level.
    */

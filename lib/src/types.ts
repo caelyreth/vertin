@@ -35,12 +35,12 @@ export interface Diagnostics {
   /**
    *
    */
-  readonly expected?: string[]
+  readonly expected?: string | string[]
 
   /**
    *
    */
-  readonly hint?: string[]
+  readonly hint?: string | string[]
 }
 
 /**
@@ -70,17 +70,17 @@ export interface Collector {
   /**
    *
    */
-  log: (msgs: Message | Message[]) => void
+  log: (msgs: Message | Message[], brief?: boolean) => void
 
   /**
    *
    */
-  submit: (msgs: Message | Message[]) => void
+  submit: (msgs: Message | Message[], brief?: boolean) => void
 
   /**
    *
    */
-  collect: () => void
+  collect: (brief?: boolean) => void
 }
 
 // MARK: - Resolver
