@@ -16,8 +16,7 @@ import type {
   Message,
   Result,
 } from './types'
-import { msg } from './helper'
-import { red } from './tint'
+import { INVALID_COMMAND, NO_COMMAND_SPECIFIED } from './errors'
 import { Err, Ok } from './utils'
 
 // MARK: - Command Matching
@@ -41,10 +40,7 @@ export function match(
     if (internalCmds?.help) {
       return Ok([internalCmds.help, sliced])
     }
-    return Err(msg({
-      level: 'error',
-      desc: 'No command specified',
-    }))
+    return Err(NO_COMMAND_SPECIFIED)
   }
 
   if (token && spec.sub && token in spec.sub) {
@@ -70,19 +66,10 @@ export function match(
   }
 
   if (token) {
-    return Err(msg({
-      level: 'error',
-      desc: `Command \`${token}\` not found`,
-      diag: {
-        source: argv,
-        offset,
-        markup: `${red`\`${token}\``} is not a valid command`,
-      },
-    }))
+    return Err(INVALID_COMMAND(argv, offset, token))
   }
 
-  return Err(msg({
-    level: 'error',
-    desc: 'No command specified',
-  }))
+  return Err(NO_COMMAND_SPECIFIED)
 }
+
+// MARK: - Parameter Parsing
