@@ -9,76 +9,85 @@
 // MARK: - Collector
 
 /**
- *
+ * Severity level of a message in collector subsystem.
  */
 export type Severity = 'info' | 'warn' | 'error'
 
 /**
- *
+ * Diagnostics of a message in collector subsystem.
  */
 export interface Diagnostics {
   /**
-   *
+   * Source of the diagnostics.
    */
   readonly source: string | string[]
 
   /**
+   * Offset of the diagnostics.
    *
+   * - If the source is an array, the offset is the index of the source in the array.
+   * - If the source is a string, the offset is the index of the character in the string.
    */
   readonly offset: number
 
   /**
+   * Markup of the diagnostics.
    *
+   * The text shows next to the `^` marks under the source line.
    */
   readonly markup: string
 
   /**
-   *
+   * Expected values of the diagnostics.
    */
   readonly expected?: string | string[]
 
   /**
-   *
+   * Hint of the diagnostics.
    */
   readonly hint?: string | string[]
 }
 
 /**
- *
+ * Message of a message in collector subsystem.
  */
 export interface Message {
   /**
-   *
+   * Severity level of the message.
    */
   readonly level: Severity
 
   /**
-   *
+   * Description of the message.
    */
   readonly desc: string
 
   /**
-   *
+   * Diagnostics of the message.
    */
   readonly diag?: Diagnostics
 }
 
 /**
- *
+ * Collector interface.
  */
 export interface Collector {
   /**
+   * Log a message or messages to the collector.
    *
+   * Will display the message immediately.
    */
   log: (msgs: Message | Message[], brief?: boolean) => void
 
   /**
+   * Submit a message or messages to the collector.
    *
+   * Only queue the message, will not display it immediately.
    */
   submit: (msgs: Message | Message[], brief?: boolean) => void
 
   /**
-   *
+   * Collect and display all queued messages.
    */
   collect: (brief?: boolean) => void
 }
@@ -155,6 +164,11 @@ export interface ConstraintContext<T> {
    * Raw value of current field.
    */
   value: T
+
+  /**
+   * Collector subsystem context.
+   */
+  collector: Collector
 }
 
 /**
@@ -190,7 +204,7 @@ interface _BaseParameter<T extends Resolver = Resolver> {
   readonly fallback?: _Resolve<T>
 
   /**
-   *
+   * Constraint function to check if the parameter is valid.
    */
   readonly constr?: Constraint<_Resolve<T>>
 }
@@ -294,13 +308,27 @@ export interface _Parsed<
   A = ArgumentRecord,
   F = FlagRecord,
 > {
+  /**
+   * Parsed arguments.
+   */
   args: A extends undefined ? never
     : _ParsedArgument<NonNullable<A>>
 
+  /**
+   * Parsed flags.
+   */
   flags: F extends undefined ? never
     : _ParsedFlag<NonNullable<F>>
 
-  // TODO: unknown flags and arguments
+  /**
+   * Unknown arguments.
+   */
+  unkArgs?: string[]
+
+  /**
+   * Unknown flags.
+   */
+  unkFlags?: (string | boolean)[]
 }
 
 // MARK: - Command
@@ -309,7 +337,26 @@ export type HandlerContext<
   A extends ArgumentRecord,
   F extends FlagRecord,
 > = _Parsed<A, F> & {
-  // TODO: more context features
+  /**
+   * Collector subsystem context.
+   */
+  collector: Collector
+
+  /**
+   * Internal context for the command.
+   *
+   * NOTE: Those APIs may be __changed without any notice__.
+   *
+   * @private
+   */
+  __internal__: {
+    /**
+     * Access the whole application specification.
+     *
+     * @private
+     */
+    app: App
+  }
 }
 
 /**
@@ -348,10 +395,19 @@ export interface Command<
 }
 
 /**
+ * Internal commands of the Vertin framework.
  *
+ * @private
  */
 export interface _InternalCommands {
+  /**
+   * Help command.
+   */
   help?: Command
+
+  /**
+   * Completion command.
+   */
   completion?: Command
 }
 

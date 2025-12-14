@@ -11,6 +11,8 @@ import { msg } from './helper'
 import { red } from './tint'
 import { Err, isErr, Ok } from './utils'
 
+// MARK: - App Features
+
 export function run(
   spec: App,
   target?: string[],
@@ -27,7 +29,9 @@ export function run(
   }
 }
 
-export function match(
+// MARK: - Command Matching
+
+function match(
   spec: App,
   argv: string[],
   internalCmds?: _InternalCommands,
