@@ -5,7 +5,17 @@ import type {
   Command,
   Constraint,
   FlagRecord,
+  Message,
 } from './types'
+
+/**
+ *
+ */
+export function msg<T extends Message>(
+  message: T,
+): T {
+  return message
+}
 
 /**
  * Helper function to create a constraint.

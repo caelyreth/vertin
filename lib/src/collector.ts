@@ -33,6 +33,8 @@ function display(msg: Message) {
       fmt.line(red.bold`ERROR ` + red`${msg.desc}`)
       break
   }
+
+  fmt.emptyLine()
   process.stderr.write(fmt.raw())
 }
 
@@ -45,12 +47,18 @@ export function createCollector(): Collector {
   const queue: QueuedMessage[] = []
 
   return {
-    log: (msg) => {
-      display(msg)
-      queue.push({ msg, logged: true })
+    log: (msgs) => {
+      const resolved = Array.isArray(msgs) ? msgs : [msgs]
+      for (const m of resolved) {
+        display(m)
+        queue.push({ msg: m, logged: true })
+      }
     },
-    submit: (msg) => {
-      queue.push({ msg, logged: false })
+    submit: (msgs) => {
+      const resolved = Array.isArray(msgs) ? msgs : [msgs]
+      for (const m of resolved) {
+        queue.push({ msg: m, logged: false })
+      }
     },
     collect: () => {},
   }

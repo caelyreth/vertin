@@ -70,12 +70,12 @@ export interface Collector {
   /**
    *
    */
-  log: (msg: Message) => void
+  log: (msgs: Message | Message[]) => void
 
   /**
    *
    */
-  submit: (msg: Message) => void
+  submit: (msgs: Message | Message[]) => void
 
   /**
    *
@@ -345,6 +345,14 @@ export interface Command<
    * @todo complete handler system, currently it's just a placeholder.
    */
   handler: (ctx: HandlerContext<A, F>) => void
+}
+
+/**
+ *
+ */
+export interface _InternalCommands {
+  help?: Command
+  completion?: Command
 }
 
 // MARK: - App
