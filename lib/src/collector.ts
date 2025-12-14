@@ -77,7 +77,7 @@ function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
 
   fmt.line(sourceLine)
   if (markupLine !== '') {
-    markupLine += diag.markup
+    markupLine += ` ${diag.markup}`
     fmt.line(markupLine)
   }
 

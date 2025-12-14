@@ -1,5 +1,5 @@
 /**
- * @file Console output colorizing utilities.
+ * @file Vertin console output colorizing utilities.
  *
  * This file contains the self-contained types and functions
  * for applying ANSI color codes to console output strings.
