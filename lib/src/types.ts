@@ -260,6 +260,25 @@ export type ArgumentRecord = Record<string, Argument>
 export type FlagRecord = Record<string, Flag>
 
 /**
+ * Section style flag specification.
+ */
+export interface FlagSection {
+  /**
+   * Brief description of the flag section.
+   */
+  readonly desc?: string
+
+  // TODO!: add more features to section grouping
+
+  /**
+   * Flags in the flag section.
+   */
+  readonly flags: FlagRecord
+}
+
+// MARK: - Parsed Parameter
+
+/**
  * Utility type to extract resolver type from an parameter specification.
  * It's used to implement the default string resolver inference.
  *
@@ -281,6 +300,26 @@ export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
     fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
     constr?: Constraint<NoInfer<_Resolve<_GetResolver<T[K]>>>>
   }
+}
+
+/**
+ * Utility type to map a flag section to its parameter map.
+ *
+ * @private
+ */
+export interface _FlagSectionMap<T extends FlagSection> {
+  flags: _ParameterMap<T['flags']>
+}
+
+/**
+ * Utility type to map flag sections to their parameter maps.
+ *
+ * @private
+ */
+export type _FlagSectionsMap<T extends FlagSection[]> = {
+  [K in keyof T]: T[K] extends FlagSection
+    ? _FlagSectionMap<T[K]>
+    : never
 }
 
 /**
@@ -307,12 +346,21 @@ type _ParsedFlagRecord<
       : _Resolve<_GetResolver<T[K]>> | undefined
 }
 
+type _ParsedFlagSections<
+  T extends FlagSection[],
+> = MergeObjects<{
+  [K in keyof T]: T[K] extends FlagSection
+    ? _ParsedFlagRecord<T[K]['flags']>
+    : never
+}>
+
 /**
  * Utility type to parse argument and flag record to a parsed argument and flag record.
  */
 export interface _Parsed<
-  A = ArgumentRecord,
-  F = FlagRecord,
+  A extends ArgumentRecord = ArgumentRecord,
+  F extends FlagRecord = FlagRecord,
+  S extends FlagSection[] = FlagSection[],
 > {
   /**
    * Parsed arguments.
@@ -324,7 +372,8 @@ export interface _Parsed<
    * Parsed flags.
    */
   readonly flags: F extends undefined ? never
-    : _ParsedFlagRecord<NonNullable<F>>
+    : S extends undefined ? never
+      : _ParsedFlagRecord<NonNullable<F>> & _ParsedFlagSections<NonNullable<S>>
 
   /**
    * Unknown arguments.
@@ -342,7 +391,8 @@ export interface _Parsed<
 export type HandlerContext<
   A extends ArgumentRecord,
   F extends FlagRecord,
-> = _Parsed<A, F> & {
+  S extends FlagSection[],
+> = _Parsed<A, F, S> & {
   /**
    * Collector subsystem context.
    */
@@ -371,6 +421,7 @@ export type HandlerContext<
 export interface Command<
   A extends ArgumentRecord = ArgumentRecord,
   F extends FlagRecord = FlagRecord,
+  S extends FlagSection[] = FlagSection[],
 > {
   /**
    * Brief description of command.
@@ -388,6 +439,11 @@ export interface Command<
   readonly flags?: F
 
   /**
+   * Sections of flags in the command.
+   */
+  readonly sections?: S
+
+  /**
    * Sub-commands of the command.
    */
   readonly sub?: Record<string, Command>
@@ -397,7 +453,7 @@ export interface Command<
    *
    * @todo complete handler system, currently it's just a placeholder.
    */
-  readonly handler: (ctx: HandlerContext<A, F>) => void
+  readonly handler: (ctx: HandlerContext<A, F, S>) => void
 }
 
 /**

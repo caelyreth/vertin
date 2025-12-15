@@ -10,12 +10,15 @@
  */
 
 import type {
+  _FlagSectionMap,
+  _FlagSectionsMap,
   _ParameterMap,
   App,
   ArgumentRecord,
   Command,
   Constraint,
   FlagRecord,
+  FlagSection,
   Message,
 } from './types'
 
@@ -63,6 +66,17 @@ export function flags<
   return record
 }
 
+/**
+ * Helper function to create a flag section.
+ */
+export function sectFlag<
+  const T extends FlagSection & _FlagSectionMap<T>,
+>(
+  section: T,
+): T {
+  return section
+}
+
 // MARK: - Command
 
 /**
@@ -71,13 +85,15 @@ export function flags<
 export function cmd<
   const A extends ArgumentRecord & _ParameterMap<A>,
   const F extends FlagRecord & _ParameterMap<F>,
+  const S extends FlagSection[] & _FlagSectionsMap<S>,
 >(
-  spec: Omit<Command<A, F>, 'handler'> & {
+  spec: Omit<Command<A, F, S>, 'handler'> & {
     args?: A
     flags?: F
+    sections?: S
   },
-  handler: Command<A, F>['handler'],
-): Command<A, F> {
+  handler: Command<A, F, S>['handler'],
+): Command<A, F, S> {
   return {
     ...spec,
     handler,
