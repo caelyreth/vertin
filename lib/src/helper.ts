@@ -10,14 +10,19 @@
  */
 
 import type {
+  _FlagSpecMap,
   _ParameterMap,
   App,
   ArgumentRecord,
   Command,
   Constraint,
+  FlagGroup,
   FlagRecord,
+  FlagSpecs,
   Message,
 } from './types'
+
+// MARK: - Subsystem
 
 /**
  *
@@ -36,6 +41,8 @@ export function constr<T>(
 ): Constraint<T> {
   return validator
 }
+
+// MARK: - Parameter
 
 /**
  * Helper function to create an record of argument parameters.
@@ -59,16 +66,34 @@ export function flags<
   return record
 }
 
+export function flagGrp<
+  const T extends FlagGroup & {
+    flags: _ParameterMap<T['flags']>
+  },
+>(
+  group: T,
+): T {
+  return group
+}
+
+// MARK: - Command
+
 /**
  * Helper function to create a command.
  */
 export function cmd<
   const A extends ArgumentRecord & _ParameterMap<A>,
-  const F extends FlagRecord & _ParameterMap<F>,
+  const F extends FlagSpecs,
 >(
   spec: Omit<Command<A, F>, 'handler'> & {
     args?: A
-    flags?: F
+    flags?: F & (
+      F extends any[]
+        ? {
+            [K in keyof F]: _FlagSpecMap<F[K]>
+          }
+        : _FlagSpecMap<F>
+    )
   },
   handler: Command<A, F>['handler'],
 ): Command<A, F> {
@@ -77,6 +102,8 @@ export function cmd<
     handler,
   }
 }
+
+// MARK: - App
 
 /**
  * Helper function to create an application.

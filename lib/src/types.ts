@@ -24,7 +24,7 @@ export interface Diagnostics {
   /**
    * Source of the diagnostics.
    */
-  readonly source: string | string[]
+  readonly source: Arrayable<string>
 
   /**
    * Offset of the diagnostics.
@@ -44,12 +44,12 @@ export interface Diagnostics {
   /**
    * Expected values of the diagnostics.
    */
-  readonly expected?: string | string[]
+  readonly expected?: Arrayable<string>
 
   /**
    * Hint of the diagnostics.
    */
-  readonly hint?: string | string[]
+  readonly hint?: Arrayable<string>
 }
 
 /**
@@ -81,14 +81,14 @@ export interface Collector {
    *
    * Will display the message immediately.
    */
-  log: (msgs: Message | Message[], brief?: boolean) => void
+  log: (msgs: Arrayable<Message>, brief?: boolean) => void
 
   /**
    * Submit a message or messages to the collector.
    *
    * Only queue the message, will not display it immediately.
    */
-  submit: (msgs: Message | Message[], brief?: boolean) => void
+  submit: (msgs: Arrayable<Message>, brief?: boolean) => void
 
   /**
    * Collect and display all queued messages.
@@ -167,12 +167,12 @@ export interface ConstraintContext<T> {
   /**
    * Raw value of current field.
    */
-  value: T
+  readonly value: T
 
   /**
    * Collector subsystem context.
    */
-  collector: Collector
+  readonly collector: Collector
 }
 
 /**
@@ -246,7 +246,7 @@ export interface Flag<T extends Resolver = Resolver> extends _BaseParameter<T> {
    * A single character string will become a single dash prefixed flag,
    * while a multi-character string will become a double dash prefixed flag.
    */
-  readonly alias?: string | string[]
+  readonly alias?: Arrayable<string>
 }
 
 /**
@@ -258,6 +258,37 @@ export type ArgumentRecord = Record<string, Argument>
  * Record type for argument and flag specifications.
  */
 export type FlagRecord = Record<string, Flag>
+
+/**
+ * A group of flag with dedicated category name and
+ * related display style in framework.
+ *
+ * This is mostly another reusable unit like
+ * {@link FlagRecord} with grouping functionality
+ */
+export interface FlagGroup {
+  /**
+   * Summary description of the flag group.
+   */
+  readonly summary?: string
+
+  // TODO: more features on flag group
+
+  /**
+   * Record of flags inside the group.
+   */
+  readonly flags: FlagRecord
+}
+
+/**
+ *
+ */
+type FlagSpec = FlagRecord | FlagGroup
+
+/**
+ *
+ */
+export type FlagSpecs = Arrayable<FlagSpec>
 
 /**
  * Utility type to extract resolver type from an parameter specification.
@@ -273,6 +304,8 @@ export type _GetResolver<T extends Argument> = T['resolver'] extends Resolver
  * Utility type to map a parameter record to a parameter map.
  *
  * Used to implement spec-level inference.
+ *
+ * @private
  */
 export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
   [K in keyof T]: Omit<T[K], 'fallback' | 'constr'> & {
@@ -284,7 +317,7 @@ export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
 /**
  * Utility type to parse argument record to a parsed argument record.
  */
-export type _ParsedArgument<
+type _ParsedArgument<
   T extends ArgumentRecord,
 > = {
   [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>>
@@ -296,7 +329,7 @@ export type _ParsedArgument<
 /**
  * Utility type to parse flag record to a parsed flag record.
  */
-export type _ParsedFlag<
+type _ParsedFlagRecord<
   T extends FlagRecord,
 > = {
   [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>>
@@ -306,45 +339,74 @@ export type _ParsedFlag<
 }
 
 /**
+ * Utility type to map a flag spec to a parameter map.
+ *
+ * @private
+ */
+export type _FlagSpecMap<T>
+  = T extends FlagRecord ? _ParameterMap<T>
+    : T extends FlagGroup ? FlagGroup & {
+      flags: _ParameterMap<T['flags']>
+    }
+      : never
+
+/**
+ *
+ */
+type _ParsedFlagGroup<T extends FlagGroup> = _ParsedFlagRecord<T['flags']>
+
+/**
+ *
+ */
+type _ParsedFlagSpec<T extends FlagSpec>
+  = T extends FlagRecord ? _ParsedFlagRecord<T>
+    : T extends FlagGroup ? _ParsedFlagGroup<T>
+      : never
+
+/**
  * Utility type to parse argument and flag record to a parsed argument and flag record.
  */
 export interface _Parsed<
   A = ArgumentRecord,
-  F = FlagRecord,
+  F = FlagSpecs,
 > {
   /**
    * Parsed arguments.
    */
-  args: A extends undefined ? never
+  readonly args: A extends undefined ? never
     : _ParsedArgument<NonNullable<A>>
 
   /**
    * Parsed flags.
    */
-  flags: F extends undefined ? never
-    : _ParsedFlag<NonNullable<F>>
+  readonly flags: F extends undefined ? never
+    : F extends any[]
+      ? MergeObjects<{
+        [K in keyof F]: _ParsedFlagSpec<NonNullable<F[K]>>
+      }>
+      : _ParsedFlagSpec<NonNullable<F>>
 
   /**
    * Unknown arguments.
    */
-  unkArgs?: string[]
+  readonly unkArgs?: string[]
 
   /**
    * Unknown flags.
    */
-  unkFlags?: (string | boolean)[]
+  readonly unkFlags?: (string | boolean)[]
 }
 
 // MARK: - Command
 
 export type HandlerContext<
   A extends ArgumentRecord,
-  F extends FlagRecord,
+  F extends FlagSpecs,
 > = _Parsed<A, F> & {
   /**
    * Collector subsystem context.
    */
-  collector: Collector
+  readonly collector: Collector
 
   /**
    * Internal context for the command.
@@ -359,7 +421,7 @@ export type HandlerContext<
      *
      * @private
      */
-    app: App
+    readonly app: App
   }
 }
 
@@ -368,34 +430,34 @@ export type HandlerContext<
  */
 export interface Command<
   A extends ArgumentRecord = ArgumentRecord,
-  F extends FlagRecord = FlagRecord,
+  F extends FlagSpecs = FlagSpecs,
 > {
   /**
    * Brief description of command.
    */
-  desc?: string
+  readonly desc?: string
 
   /**
    * Arguments of the command.
    */
-  args?: A
+  readonly args?: A
 
   /**
    * Flags of the command.
    */
-  flags?: F
+  readonly flags?: F
 
   /**
    * Sub-commands of the command.
    */
-  sub?: Record<string, Command>
+  readonly sub?: Record<string, Command>
 
   /**
    * Handler function of the command.
    *
    * @todo complete handler system, currently it's just a placeholder.
    */
-  handler: (ctx: HandlerContext<A, F>) => void
+  readonly handler: (ctx: HandlerContext<A, F>) => void
 }
 
 /**
@@ -431,27 +493,27 @@ export interface App {
   /**
    * Brief description of the app.
    */
-  desc: string
+  readonly desc: string
 
   /**
    * Version of the app.
    */
-  ver?: string
+  readonly ver?: string
 
   /**
    * Main command of the app.
    */
-  main?: Command
+  readonly main?: Command
 
   /**
    * Sub-commands of the app.
    */
-  sub?: Record<string, Command>
+  readonly sub?: Record<string, Command>
 
   /**
    * Vertin framework configuration.
    */
-  config?: AppConfig
+  readonly config?: AppConfig
 }
 
 // MARK: - Utilities
@@ -481,3 +543,23 @@ export interface Failure<E> {
  * @template E The type of the error value.
  */
 export type Result<T, E = string[]> = Success<T> | Failure<E>
+
+/**
+ * Utility type to make a type arrayable.
+ */
+export type Arrayable<T> = T | T[]
+
+/**
+ * Utility type to convert a union type to an intersection type.
+ */
+export type UnionToIntersection<U>
+  = (U extends any ? (x: U) => void : never) extends
+  (x: infer I) => void ? I : never
+
+/**
+ * Utility type to merge multiple objects into a single object.
+ */
+export type MergeObjects<T extends readonly object[]>
+  = UnionToIntersection<T[number]> extends infer O
+    ? { [K in keyof O]: O[K] }
+    : never
