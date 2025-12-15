@@ -260,37 +260,6 @@ export type ArgumentRecord = Record<string, Argument>
 export type FlagRecord = Record<string, Flag>
 
 /**
- * A group of flag with dedicated category name and
- * related display style in framework.
- *
- * This is mostly another reusable unit like
- * {@link FlagRecord} with grouping functionality
- */
-export interface FlagGroup {
-  /**
-   * Summary description of the flag group.
-   */
-  readonly summary?: string
-
-  // TODO: more features on flag group
-
-  /**
-   * Record of flags inside the group.
-   */
-  readonly flags: FlagRecord
-}
-
-/**
- *
- */
-type FlagSpec = FlagRecord | FlagGroup
-
-/**
- *
- */
-export type FlagSpecs = Plural<FlagSpec>
-
-/**
  * Utility type to extract resolver type from an parameter specification.
  * It's used to implement the default string resolver inference.
  *
@@ -339,36 +308,11 @@ type _ParsedFlagRecord<
 }
 
 /**
- * Utility type to map a flag spec to a parameter map.
- *
- * @private
- */
-export type _FlagSpecMap<T>
-  = T extends FlagRecord ? _ParameterMap<T>
-    : T extends FlagGroup ? FlagGroup & {
-      flags: _ParameterMap<T['flags']>
-    }
-      : never
-
-/**
- *
- */
-type _ParsedFlagGroup<T extends FlagGroup> = _ParsedFlagRecord<T['flags']>
-
-/**
- *
- */
-type _ParsedFlagSpec<T extends FlagSpec>
-  = T extends FlagRecord ? _ParsedFlagRecord<T>
-    : T extends FlagGroup ? _ParsedFlagGroup<T>
-      : never
-
-/**
  * Utility type to parse argument and flag record to a parsed argument and flag record.
  */
 export interface _Parsed<
   A = ArgumentRecord,
-  F = FlagSpecs,
+  F = FlagRecord,
 > {
   /**
    * Parsed arguments.
@@ -380,11 +324,7 @@ export interface _Parsed<
    * Parsed flags.
    */
   readonly flags: F extends undefined ? never
-    : F extends any[]
-      ? MergeObjects<{
-        [K in keyof F]: _ParsedFlagSpec<NonNullable<F[K]>>
-      }>
-      : _ParsedFlagSpec<NonNullable<F>>
+    : _ParsedFlagRecord<NonNullable<F>>
 
   /**
    * Unknown arguments.
@@ -401,7 +341,7 @@ export interface _Parsed<
 
 export type HandlerContext<
   A extends ArgumentRecord,
-  F extends FlagSpecs,
+  F extends FlagRecord,
 > = _Parsed<A, F> & {
   /**
    * Collector subsystem context.
@@ -430,7 +370,7 @@ export type HandlerContext<
  */
 export interface Command<
   A extends ArgumentRecord = ArgumentRecord,
-  F extends FlagSpecs = FlagSpecs,
+  F extends FlagRecord = FlagRecord,
 > {
   /**
    * Brief description of command.

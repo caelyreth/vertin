@@ -10,15 +10,12 @@
  */
 
 import type {
-  _FlagSpecMap,
   _ParameterMap,
   App,
   ArgumentRecord,
   Command,
   Constraint,
-  FlagGroup,
   FlagRecord,
-  FlagSpecs,
   Message,
 } from './types'
 
@@ -66,16 +63,6 @@ export function flags<
   return record
 }
 
-export function flagGrp<
-  const T extends FlagGroup & {
-    flags: _ParameterMap<T['flags']>
-  },
->(
-  group: T,
-): T {
-  return group
-}
-
 // MARK: - Command
 
 /**
@@ -83,18 +70,11 @@ export function flagGrp<
  */
 export function cmd<
   const A extends ArgumentRecord & _ParameterMap<A>,
-  const F extends FlagSpecs,
+  const F extends FlagRecord & _ParameterMap<F>,
 >(
   spec: Omit<Command<A, F>, 'handler'> & {
     args?: A
-    flags?: F & (
-      F extends any[]
-        ? {
-            [K in keyof F]: _FlagSpecMap<F[K]>
-          }
-        : _FlagSpecMap<F>
-    )
-
+    flags?: F
   },
   handler: Command<A, F>['handler'],
 ): Command<A, F> {
