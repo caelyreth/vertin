@@ -94,6 +94,7 @@ export function cmd<
           }
         : _FlagSpecMap<F>
     )
+
   },
   handler: Command<A, F>['handler'],
 ): Command<A, F> {

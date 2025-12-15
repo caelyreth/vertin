@@ -24,7 +24,7 @@ export interface Diagnostics {
   /**
    * Source of the diagnostics.
    */
-  readonly source: Arrayable<string>
+  readonly source: Plural<string>
 
   /**
    * Offset of the diagnostics.
@@ -44,12 +44,12 @@ export interface Diagnostics {
   /**
    * Expected values of the diagnostics.
    */
-  readonly expected?: Arrayable<string>
+  readonly expected?: Plural<string>
 
   /**
    * Hint of the diagnostics.
    */
-  readonly hint?: Arrayable<string>
+  readonly hint?: Plural<string>
 }
 
 /**
@@ -81,14 +81,14 @@ export interface Collector {
    *
    * Will display the message immediately.
    */
-  log: (msgs: Arrayable<Message>, brief?: boolean) => void
+  log: (msgs: Plural<Message>, brief?: boolean) => void
 
   /**
    * Submit a message or messages to the collector.
    *
    * Only queue the message, will not display it immediately.
    */
-  submit: (msgs: Arrayable<Message>, brief?: boolean) => void
+  submit: (msgs: Plural<Message>, brief?: boolean) => void
 
   /**
    * Collect and display all queued messages.
@@ -246,7 +246,7 @@ export interface Flag<T extends Resolver = Resolver> extends _BaseParameter<T> {
    * A single character string will become a single dash prefixed flag,
    * while a multi-character string will become a double dash prefixed flag.
    */
-  readonly alias?: Arrayable<string>
+  readonly alias?: Plural<string>
 }
 
 /**
@@ -288,7 +288,7 @@ type FlagSpec = FlagRecord | FlagGroup
 /**
  *
  */
-export type FlagSpecs = Arrayable<FlagSpec>
+export type FlagSpecs = Plural<FlagSpec>
 
 /**
  * Utility type to extract resolver type from an parameter specification.
@@ -545,9 +545,9 @@ export interface Failure<E> {
 export type Result<T, E = string[]> = Success<T> | Failure<E>
 
 /**
- * Utility type to make a type arrayable.
+ * Utility type to make a type to include itself and its array form.
  */
-export type Arrayable<T> = T | T[]
+export type Plural<T> = T | T[]
 
 /**
  * Utility type to convert a union type to an intersection type.
