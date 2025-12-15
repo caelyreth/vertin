@@ -40,7 +40,7 @@ export function constr<T>(
 /**
  * Helper function to create an record of argument parameters.
  */
-export function arg<
+export function args<
   const T extends ArgumentRecord & _ParameterMap<T>,
 >(
   record: T,
@@ -51,7 +51,7 @@ export function arg<
 /**
  * Helper function to create an record of flag parameters.
  */
-export function flag<
+export function flags<
   const T extends FlagRecord & _ParameterMap<T>,
 >(
   record: T,
