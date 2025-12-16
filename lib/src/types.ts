@@ -303,7 +303,9 @@ export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
 }
 
 /**
+ * Utility type to map a flag record into flag section.
  *
+ * @private
  */
 export type _FlagSectionsMap<S extends FlagSection[], F extends FlagRecord> = {
   [K in keyof S]: S[K] extends FlagSection
@@ -341,18 +343,23 @@ type _ParsedFlagRecord<
 export interface _Parsed<
   A extends ArgumentRecord = ArgumentRecord,
   F extends FlagRecord = FlagRecord,
+  P extends Snippet[] = Snippet[],
 > {
   /**
    * Parsed arguments.
    */
-  readonly args: A extends undefined ? never
-    : _ParsedArgument<NonNullable<A>>
+  readonly args: _ParsedArgument<NonNullable<A>>
+    & MergeObjects<{
+      [K in keyof P]: _ParsedArgument<NonNullable<P[K]['args']>>
+    }>
 
   /**
    * Parsed flags.
    */
-  readonly flags: F extends undefined ? never
-    : _ParsedFlagRecord<NonNullable<F>>
+  readonly flags: _ParsedFlagRecord<NonNullable<F>>
+    & MergeObjects<{
+      [K in keyof P]: _ParsedFlagRecord<NonNullable<P[K]['flags']>>
+    }>
 
   /**
    * Unknown arguments.
@@ -365,12 +372,48 @@ export interface _Parsed<
   readonly unkFlags?: (string | boolean)[]
 }
 
+// MARK: - Snippet
+
+/**
+ *
+ */
+export interface Snippet<
+  A extends ArgumentRecord = ArgumentRecord,
+  F extends FlagRecord = FlagRecord,
+  S extends FlagSection[] = FlagSection[],
+> {
+  /**
+   * Arguments in the snippet.
+   */
+  readonly args?: A
+
+  /**
+   * Flags in the snippet.
+   */
+  readonly flags?: F
+
+  /**
+   * Sections of flags in the snippet.
+   */
+  readonly sections?: S
+}
+
+/**
+ * @private
+ */
+export type _SnippetMap<T extends Snippet> = Snippet & {
+  flags?: FlagRecord & _ParameterMap<NonNullable<T['flags']>>
+  args?: ArgumentRecord & _ParameterMap<NonNullable<T['args']>>
+  sections?: _FlagSectionsMap<NonNullable<T['sections']>, NonNullable<T['flags']>>
+}
+
 // MARK: - Command
 
 export type HandlerContext<
   A extends ArgumentRecord,
   F extends FlagRecord,
-> = _Parsed<A, F> & {
+  P extends Snippet[],
+> = _Parsed<A, F, P> & {
   /**
    * Collector subsystem context.
    */
@@ -400,6 +443,7 @@ export interface Command<
   A extends ArgumentRecord = ArgumentRecord,
   F extends FlagRecord = FlagRecord,
   S extends FlagSection[] = FlagSection[],
+  P extends Snippet[] = Snippet[],
 > {
   /**
    * Brief description of command.
@@ -427,11 +471,16 @@ export interface Command<
   readonly sub?: Record<string, Command>
 
   /**
+   * Snippets used in the command.
+   */
+  readonly use?: P
+
+  /**
    * Handler function of the command.
    *
    * @todo complete handler system, currently it's just a placeholder.
    */
-  readonly handler: (ctx: HandlerContext<A, F>) => void
+  readonly handler: (ctx: HandlerContext<A, F, P>) => void
 }
 
 /**

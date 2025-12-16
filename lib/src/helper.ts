@@ -12,6 +12,7 @@
 import type {
   _FlagSectionsMap,
   _ParameterMap,
+  _SnippetMap,
   App,
   ArgumentRecord,
   Command,
@@ -19,6 +20,7 @@ import type {
   FlagRecord,
   FlagSection,
   Message,
+  Snippet,
 } from './types'
 
 // MARK: - Subsystem
@@ -65,6 +67,19 @@ export function flags<
   return record
 }
 
+// MARK: - Snippet
+
+/**
+ * Helper function to create a reusable parameter specification.
+ */
+export function snippet<
+  const T extends Snippet & _SnippetMap<T>,
+>(
+  records: T,
+): T {
+  return records
+}
+
 // MARK: - Command
 
 /**
@@ -74,14 +89,16 @@ export function cmd<
   const A extends ArgumentRecord & _ParameterMap<A>,
   const F extends FlagRecord & _ParameterMap<F>,
   const S extends FlagSection[] & _FlagSectionsMap<S, F>,
+  const P extends Snippet[],
 >(
-  spec: Omit<Command<A, F, S>, 'handler'> & {
+  spec: Omit<Command<A, F, S, P>, 'handler'> & {
     args?: A
     flags?: F
     sections?: S
+    use?: P
   },
-  handler: Command<A, F, S>['handler'],
-): Command<A, F, S> {
+  handler: Command<A, F, S, P>['handler'],
+): Command<A, F, S, P> {
   return {
     ...spec,
     handler,
