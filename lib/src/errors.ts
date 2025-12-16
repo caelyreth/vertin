@@ -9,28 +9,3 @@
  * @author Kohane <i@kept.to>
  * @license MPL-2.0
  */
-
-import { msg } from './helper'
-
-// MARK: - Matching Stage
-
-export const NO_COMMAND_SPECIFIED = msg({
-  level: 'error',
-  desc: 'No command specified',
-})
-
-export function INVALID_COMMAND(
-  source: string[],
-  offset: number,
-  token: string,
-) {
-  return msg({
-    level: 'error',
-    desc: 'Invalid command',
-    diag: {
-      source,
-      offset,
-      markup: `\`${token}\` is not a valid command`,
-    },
-  })
-}
