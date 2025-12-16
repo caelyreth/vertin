@@ -17,7 +17,7 @@ import type { Formatter } from './formatter'
 import type { Collector, Diagnostics, Message } from './types'
 import process from 'node:process'
 import { createFormatter } from './formatter'
-import { blue, cyan, magenta, normal, red, yellow } from './tint'
+import { blue, cyan, magenta, normal, red, yellow } from './styler'
 
 // MARK: - Internal Types
 

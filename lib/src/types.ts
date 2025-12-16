@@ -10,6 +10,8 @@
  * @license MPL-2.0
  */
 
+import type { Styler } from './styler'
+
 // MARK: - Collector
 
 /**
@@ -267,6 +269,11 @@ export interface FlagSection<T extends FlagRecord = FlagRecord> {
    * Brief description of the flag section.
    */
   readonly desc?: string
+
+  /**
+   * Tint color of the flag section.
+   */
+  readonly styler?: Styler
 
   // TODO!: add more features to section grouping
 
