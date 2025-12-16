@@ -10,7 +10,6 @@
  */
 
 import type {
-  _FlagSectionMap,
   _FlagSectionsMap,
   _ParameterMap,
   App,
@@ -66,17 +65,6 @@ export function flags<
   return record
 }
 
-/**
- * Helper function to create a flag section.
- */
-export function sectFlag<
-  const T extends FlagSection & _FlagSectionMap<T>,
->(
-  section: T,
-): T {
-  return section
-}
-
 // MARK: - Command
 
 /**
@@ -85,7 +73,7 @@ export function sectFlag<
 export function cmd<
   const A extends ArgumentRecord & _ParameterMap<A>,
   const F extends FlagRecord & _ParameterMap<F>,
-  const S extends FlagSection[] & _FlagSectionsMap<S>,
+  const S extends FlagSection[] & _FlagSectionsMap<S, F>,
 >(
   spec: Omit<Command<A, F, S>, 'handler'> & {
     args?: A
