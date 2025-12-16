@@ -29,6 +29,11 @@ export interface Diagnostics {
   readonly source: Plural<string>
 
   /**
+   * Prefix string before source line.
+   */
+  readonly prefix?: string
+
+  /**
    * Offset of the diagnostics.
    *
    * - If the source is an array, the offset is the index of the source in the array.
@@ -533,23 +538,6 @@ export type _CommandCategoriesMap<S extends CommandCategory[], C extends Command
   [K in keyof S]: S[K] extends CommandCategory
     ? CommandCategory<C>
     : never
-}
-
-/**
- * Internal commands of the Vertin framework.
- *
- * @private
- */
-export interface _InternalCommands {
-  /**
-   * Help command.
-   */
-  help?: Command
-
-  /**
-   * Completion command.
-   */
-  completion?: Command
 }
 
 // MARK: - App

@@ -51,11 +51,11 @@ function displayGroup(heading: string, raw: string | string[], fmt: Formatter) {
 function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
   fmt.indent()
 
-  let sourceLine: string
-  let markupLine = ''
+  let sourceLine = diag.prefix ?? ''
+  let markupLine = diag.prefix ? ' '.repeat(diag.prefix.length) : ''
 
   if (Array.isArray(diag.source)) {
-    sourceLine = diag.source.join(' ')
+    sourceLine += diag.source.join(' ')
     for (let i = 0; i < diag.source.length; i++) {
       const elem = diag.source[i]
       if (i === diag.offset) {
@@ -73,7 +73,7 @@ function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
     }
   }
   else {
-    sourceLine = diag.source
+    sourceLine += diag.source
     markupLine += ' '.repeat(diag.offset)
     let endPos = diag.offset
     while (endPos < diag.source.length && diag.source[endPos] !== ' ') {

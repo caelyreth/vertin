@@ -29,10 +29,10 @@ export function Ok<T>(value: T): Success<T> {
  *
  * @param errors Returned error value(s).
  */
-export function Err<E>(errors: E | E[]): Failure<E[]> {
+export function Err<E>(errors: E): Failure<E> {
   return {
     success: false,
-    errors: Array.isArray(errors) ? errors : [errors],
+    errors,
   }
 }
 
