@@ -9,7 +9,7 @@
  * @license MPL-2.0
  */
 
-import type { App, Command, Message, Result } from './types'
+import type { App, Command, CtorResolver, FnResolver, Message, Result } from './types'
 import { INVALID_COMMAND, NO_COMMAND_SPECIFIED } from './errors'
 import { Err, Ok } from './utils'
 
@@ -63,4 +63,44 @@ export function match(
   }
 
   return Err(NO_COMMAND_SPECIFIED)
+}
+
+// MARK: - Value Resolution
+
+// Resolve a raw value with given non-array resolver
+// Success: resolved value; Error: markup string
+function _resolve(
+  value: string,
+  r: FnResolver | CtorResolver = String,
+): Result<any, string> {
+  if (r === String)
+    return Ok(value)
+  if (r === Number) {
+    const resolved = Number(value)
+    if (Number.isNaN(resolved))
+      return Err(`\`${value}\` is not a valid number`)
+    return Ok(resolved)
+  }
+  if (r === Boolean) {
+    if (value === 'true' || value === '1')
+      return Ok(true)
+    if (value === 'false' || value === '0')
+      return Ok(false)
+    return Err(`\`${value}\` is not a valid boolean value`)
+  }
+  if (typeof r === 'function') {
+    try {
+      const resolved = (r as FnResolver)(value)
+      return Ok(resolved)
+    }
+    catch (e: any) {
+      if (e instanceof Error) {
+        return Err(e.message)
+      }
+      else {
+        return Err(`\`${value}\` is not resolvable`)
+      }
+    }
+  }
+  return Err('Field is configured with a invalid resolver')
 }

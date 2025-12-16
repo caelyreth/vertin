@@ -129,7 +129,6 @@ export type FnResolver = (raw: string) => any
 export type CtorResolver
   = | StringConstructor
     | NumberConstructor
-    | BigIntConstructor
     | BooleanConstructor
 
 /**
@@ -149,10 +148,9 @@ export type Resolver = FnResolver | CtorResolver | FnResolver[] | CtorResolver[]
 type _ResolveUnit<T>
   = T extends StringConstructor ? string
     : T extends NumberConstructor ? number
-      : T extends BigIntConstructor ? bigint
-        : T extends BooleanConstructor ? boolean
-          : T extends FnResolver ? ReturnType<T>
-            : never
+      : T extends BooleanConstructor ? boolean
+        : T extends FnResolver ? ReturnType<T>
+          : never
 
 /**
  * Utility type to extract the resolved type from any kind of resolver.
