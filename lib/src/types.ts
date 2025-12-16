@@ -103,87 +103,99 @@ export interface Collector {
   collect: (brief?: boolean) => void
 }
 
-// MARK: - Resolver
+// MARK: - Deriver
 
 /**
- * A function that resolves the raw parameter string into a dedicated type.
+ * A __function__ that derives a dedicated type from raw value string
  *
- * You can use a custom function to parse a string into a type, e.g. parsing from
- * raw encoded input (may come from pipeline) string to a decoded string,
- * so that we could utilize all features of vertin, like constraint APIs.
- *
- * NOTE: It is not recommended to perform primitive validation in a resolver.
- * In that use case, we should consider use constraint APIs.
+ * You can use a custom function to parse a string into a _dedicated type_,
+ * e.g. parsing from raw encoded input string to a decoded type,
+ * so that we could utilize all _built-in features_ of Vertin with that type.
  */
-export type FnResolver = (raw: string) => any
+export type FnDeriver<R = any> = (raw: string) => R
 
 /**
- * Language's built-in constructor to resolve raw parameter string into
- * their corresponding primitive type.
+ * Language's built-in constructor to derive their corresponding primitive
+ * type from raw value string
  *
- * NOTE: Vertin only support a subset of language's built-in constructor.
+ * Vertin only support a subset of language's built-in constructor.
+ * You can use {@link FnDeriver} to support other types in construction.
  *
  * @example
- * `String`, `Number`, `BigInt`, `Boolean`
+ * `String`, `Number`, `Boolean`
  */
-export type CtorResolver
+export type CtorDeriver
   = | StringConstructor
     | NumberConstructor
     | BooleanConstructor
 
 /**
- * A resolver is a standard function or part of a language's built-in constructor.
- * to resolve a raw parameter string into a concrete type.
+ * A deriver is a __standard function__ or part of a language's built-in
+ * __constructors__ used to derive a concrete type from raw value string.
  *
- * In vertin, resolving is the _first step_ a user input value becomes available.
+ * A {@link Deriver} is used for value __construction__, affecting the type of
+ * value you could used from {@link HandlerContext}. Due to the same reason,
+ * it is lack in displaying detailed messages in error messages and generating
+ * good shell completion _(e.g. completion for a file extension, etc.)_
+ *
+ * If you want to make a better UX for your end user, consider using
+ * `validate` API in the parameter specification to make better messages.
+ *
+ * In contrast, `derive` API in that specification is mainly for better DX.
  */
-export type Resolver = FnResolver | CtorResolver | FnResolver[] | CtorResolver[]
+export type Deriver = FnDeriver | CtorDeriver | FnDeriver[] | CtorDeriver[]
 
 /**
- * Utility type to extract the resolved type from a non-array resolver.
+ * Utility type to extract the dervied type from a non-array deriver
  *
  * @private
- * @template T The resolver unit type to extract
+ * @template T The deriver unit type to extract
  */
-type _ResolveUnit<T>
+type _DeriveUnit<T>
   = T extends StringConstructor ? string
     : T extends NumberConstructor ? number
       : T extends BooleanConstructor ? boolean
-        : T extends FnResolver ? ReturnType<T>
+        : T extends FnDeriver ? ReturnType<T>
           : never
 
 /**
- * Utility type to extract the resolved type from any kind of resolver.
+ * Utility type to extract the dervied type from any {@link Deriver}.
  *
  * @private
- * @template T Any kind of {@link Resolver} type to extract
+ * @template T Any kind of {@link Deriver} type to extract
  */
-export type _Resolve<T extends Resolver>
-  = T extends readonly (infer U)[] ? _ResolveUnit<U>[]
-    : T extends (infer U)[] ? _ResolveUnit<U>[]
-      : _ResolveUnit<T>
+export type _Derive<T extends Deriver>
+  = T extends readonly (infer U)[] ? _DeriveUnit<U>[]
+    : T extends (infer U)[] ? _DeriveUnit<U>[]
+      : _DeriveUnit<T>
 
-// MARK: - Constraint
+// MARK: - Validator
 
 /**
- * Constraint checking context.
+ * Working context of a validator
  */
-export interface ConstraintContext<T> {
+export interface ValidatorContext<T> {
   /**
-   * Raw value of current field.
+   * Raw value of current field
    */
   readonly value: T
 
   /**
-   * Collector subsystem context.
+   * Collector subsystem context
    */
   readonly collector: Collector
 }
 
 /**
- * Constraint function to check if a value is valid.
+ * Validate function to check if a value is valid
+ *
+ * A validator is used to __audit__ a value in runtime, affecting the UX
+ * of end users in many aspects; it could be used to reduce boilerplate
+ * runtime checking, producing comprehensive error messaging with Vertin's
+ * un-throwable APIs and generating well shell completions.
  */
-export type Constraint<T> = (ctx: ConstraintContext<T>) => void
+// TODO: return something to build shell completions.
+export type Validator<T> = (ctx: ValidatorContext<T>) => void
 
 // MARK: - Parameter
 
@@ -191,11 +203,11 @@ export type Constraint<T> = (ctx: ConstraintContext<T>) => void
  * Base parameter specification.
  *
  * @private
- * @template T {@link Resolver} used to parse raw string value.
+ * @template T {@link Deriver} used to parse raw string value.
  */
-interface _BaseParameter<T extends Resolver = Resolver> {
+interface _BaseParameter<T extends Deriver = Deriver> {
   /**
-   * {@link Resolver} used to parse raw string value.
+   * {@link Deriver} used to parse raw string value.
    *
    * @default
    * `String`
@@ -210,20 +222,20 @@ interface _BaseParameter<T extends Resolver = Resolver> {
   /**
    * Fallback value if parameter field omitted.
    */
-  readonly fallback?: _Resolve<T>
+  readonly fallback?: _Derive<T>
 
   /**
    * Constraint function to check if the parameter is valid.
    */
-  readonly constr?: Constraint<_Resolve<T>>
+  readonly constr?: Validator<_Derive<T>>
 }
 
 /**
  * Argument parameter specification.
  *
- * @template T {@link Resolver} used to parse the raw string value.
+ * @template T {@link Deriver} used to parse the raw string value.
  */
-export interface Argument<T extends Resolver = Resolver> extends _BaseParameter<T> {
+export interface Argument<T extends Deriver = Deriver> extends _BaseParameter<T> {
   /**
    * Whether the argument field is optional.
    *
@@ -235,9 +247,9 @@ export interface Argument<T extends Resolver = Resolver> extends _BaseParameter<
 /**
  * Flag parameter specification.
  *
- * @template T {@link Resolver} used to parse raw string value.
+ * @template T {@link Deriver} used to parse raw string value.
  */
-export interface Flag<T extends Resolver = Resolver> extends _BaseParameter<T> {
+export interface Flag<T extends Deriver = Deriver> extends _BaseParameter<T> {
   /**
    * Whether the flag field is required.
    *
@@ -294,7 +306,7 @@ export interface FlagSection<T extends FlagRecord = FlagRecord> {
  *
  * @private
  */
-export type _GetResolver<T extends Argument> = T['resolver'] extends Resolver
+export type _GetResolver<T extends Argument> = T['resolver'] extends Deriver
   ? T['resolver']
   : StringConstructor
 
@@ -307,8 +319,8 @@ export type _GetResolver<T extends Argument> = T['resolver'] extends Resolver
  */
 export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
   [K in keyof T]: Omit<T[K], 'fallback' | 'constr'> & {
-    fallback?: NoInfer<_Resolve<_GetResolver<T[K]>>>
-    constr?: Constraint<NoInfer<_Resolve<_GetResolver<T[K]>>>>
+    fallback?: NoInfer<_Derive<_GetResolver<T[K]>>>
+    constr?: Validator<NoInfer<_Derive<_GetResolver<T[K]>>>>
   }
 }
 
@@ -329,10 +341,10 @@ export type _FlagSectionsMap<S extends FlagSection[], F extends FlagRecord> = {
 type _ParsedArgument<
   T extends ArgumentRecord,
 > = {
-  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>>
-    ? _Resolve<_GetResolver<T[K]>>
-    : T[K]['optional'] extends true ? _Resolve<_GetResolver<T[K]>> | undefined
-      : _Resolve<_GetResolver<T[K]>>
+  [K in keyof T]: T[K]['fallback'] extends _Derive<_GetResolver<T[K]>>
+    ? _Derive<_GetResolver<T[K]>>
+    : T[K]['optional'] extends true ? _Derive<_GetResolver<T[K]>> | undefined
+      : _Derive<_GetResolver<T[K]>>
 }
 
 /**
@@ -341,10 +353,10 @@ type _ParsedArgument<
 type _ParsedFlagRecord<
   T extends FlagRecord,
 > = {
-  [K in keyof T]: T[K]['fallback'] extends _Resolve<_GetResolver<T[K]>>
-    ? _Resolve<_GetResolver<T[K]>>
-    : T[K]['required'] extends true ? _Resolve<_GetResolver<T[K]>>
-      : _Resolve<_GetResolver<T[K]>> | undefined
+  [K in keyof T]: T[K]['fallback'] extends _Derive<_GetResolver<T[K]>>
+    ? _Derive<_GetResolver<T[K]>>
+    : T[K]['required'] extends true ? _Derive<_GetResolver<T[K]>>
+      : _Derive<_GetResolver<T[K]>> | undefined
 }
 
 /**

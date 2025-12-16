@@ -19,11 +19,11 @@ import type {
   Command,
   CommandCategory,
   CommandRecord,
-  Constraint,
   FlagRecord,
   FlagSection,
   Message,
   Snippet,
+  Validator,
 } from './types'
 
 // MARK: - Subsystem
@@ -41,8 +41,8 @@ export function msg<T extends Message>(
  * Helper function to create a constraint.
  */
 export function constr<T>(
-  validator: Constraint<T>,
-): Constraint<T> {
+  validator: Validator<T>,
+): Validator<T> {
   return validator
 }
 

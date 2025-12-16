@@ -9,7 +9,7 @@
  * @license MPL-2.0
  */
 
-import type { App, Command, CtorResolver, FnResolver, Message, Result } from './types'
+import type { App, Command, CtorDeriver, FnDeriver, Message, Result } from './types'
 import { INVALID_COMMAND, NO_COMMAND_SPECIFIED } from './errors'
 import { Err, Ok } from './utils'
 
@@ -71,7 +71,7 @@ export function match(
 // Success: resolved value; Error: markup string
 function _resolve(
   value: string,
-  r: FnResolver | CtorResolver = String,
+  r: FnDeriver | CtorDeriver = String,
 ): Result<any, string> {
   if (r === String)
     return Ok(value)
@@ -90,7 +90,7 @@ function _resolve(
   }
   if (typeof r === 'function') {
     try {
-      const resolved = (r as FnResolver)(value)
+      const resolved = (r as FnDeriver)(value)
       return Ok(resolved)
     }
     catch (e: any) {
