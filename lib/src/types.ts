@@ -252,7 +252,7 @@ export interface Flag<T extends Resolver = Resolver> extends _BaseParameter<T> {
 }
 
 /**
- * Record type for argument and flag specifications.
+ * Record type for argument and argument specifications.
  */
 export type ArgumentRecord = Record<string, Argument>
 
@@ -444,12 +444,19 @@ export type HandlerContext<
 }
 
 /**
+ * Record type for argument and command specifications.
+ */
+export type CommandRecord = Record<string, Command>
+
+/**
  * Command specification.
  */
 export interface Command<
   A extends ArgumentRecord = ArgumentRecord,
   F extends FlagRecord = FlagRecord,
   S extends FlagSection[] = FlagSection[],
+  C extends CommandRecord = CommandRecord,
+  G extends CommandCategory[] = CommandCategory[],
   P extends Snippet[] = Snippet[],
 > {
   /**
@@ -475,7 +482,12 @@ export interface Command<
   /**
    * Sub-commands of the command.
    */
-  readonly sub?: Record<string, Command>
+  readonly sub?: C
+
+  /**
+   * Command category grouping.
+   */
+  readonly categories?: G
 
   /**
    * Snippets used in the command.
@@ -488,6 +500,39 @@ export interface Command<
    * @todo complete handler system, currently it's just a placeholder.
    */
   readonly handler: (ctx: HandlerContext<A, F, P>) => void
+}
+
+/**
+ *
+ */
+export interface CommandCategory<T extends CommandRecord = CommandRecord> {
+  /**
+   * Brief description of the command category.
+   */
+  readonly desc?: string
+
+  /**
+   * Tint color of the command category.
+   */
+  readonly styler?: Styler
+
+  // TODO!: add more features to category grouping
+
+  /**
+   * Flags in the command category.
+   */
+  readonly cmds: (keyof T)[]
+}
+
+/**
+ * Utility type to map a command record into category section.
+ *
+ * @private
+ */
+export type _CommandCategoriesMap<S extends CommandCategory[], C extends CommandRecord> = {
+  [K in keyof S]: S[K] extends CommandCategory
+    ? CommandCategory<C>
+    : never
 }
 
 /**
@@ -519,11 +564,14 @@ export interface AppConfig {}
 /**
  * Application specification.
  */
-export interface App {
+export interface App<
+  C extends CommandRecord = CommandRecord,
+  G extends CommandCategory[] = CommandCategory[],
+> {
   /**
    * Brief description of the app.
    */
-  readonly desc: string
+  readonly desc?: string
 
   /**
    * Version of the app.
@@ -538,7 +586,12 @@ export interface App {
   /**
    * Sub-commands of the app.
    */
-  readonly sub?: Record<string, Command>
+  readonly sub?: C
+
+  /**
+   * Command category grouping.
+   */
+  readonly categories?: G
 
   /**
    * Vertin framework configuration.

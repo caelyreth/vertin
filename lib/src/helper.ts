@@ -10,12 +10,15 @@
  */
 
 import type {
+  _CommandCategoriesMap,
   _FlagSectionsMap,
   _ParameterMap,
   _SnippetMap,
   App,
   ArgumentRecord,
   Command,
+  CommandCategory,
+  CommandRecord,
   Constraint,
   FlagRecord,
   FlagSection,
@@ -89,16 +92,20 @@ export function cmd<
   const A extends ArgumentRecord & _ParameterMap<A>,
   const F extends FlagRecord & _ParameterMap<F>,
   const S extends FlagSection[] & _FlagSectionsMap<S, F>,
+  const C extends CommandRecord,
+  const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,
   const P extends Snippet[],
 >(
-  spec: Omit<Command<A, F, S, P>, 'handler'> & {
-    args?: A
-    flags?: F
-    sections?: S
-    use?: P
+  spec: Omit<Command<A, F, S, C, G>, 'handler'> & {
+    readonly args?: A
+    readonly flags?: F
+    readonly sections?: S
+    readonly sub?: C
+    readonly categories?: G
+    readonly use?: P
   },
-  handler: Command<A, F, S, P>['handler'],
-): Command<A, F, S, P> {
+  handler: Command<A, F, S, C, G>['handler'],
+): Command<A, F, S, C, G> {
   return {
     ...spec,
     handler,
@@ -110,10 +117,16 @@ export function cmd<
 /**
  * Helper function to create an application.
  */
-export function app(
-  spec: Omit<App, 'config'>,
-  config?: App['config'],
-): App {
+export function app<
+  const C extends CommandRecord,
+  const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,
+>(
+  spec: Omit<App<C, G>, 'config'> & {
+    readonly sub?: C
+    readonly categories?: G
+  },
+  config?: App<C, G>['config'],
+): App<C, G> {
   return {
     ...spec,
     config,
