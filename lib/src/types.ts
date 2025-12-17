@@ -29,11 +29,6 @@ export interface Diagnostics {
   readonly source: Plural<string>
 
   /**
-   * Prefix string before source line.
-   */
-  readonly prefix?: string
-
-  /**
    * Offset of the diagnostics.
    *
    * - If the source is an array, the offset is the index of the source in the array.
