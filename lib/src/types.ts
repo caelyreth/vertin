@@ -10,7 +10,7 @@
  * @license MPL-2.0
  */
 
-import type { Styler } from './styler'
+import type { Styler } from './tint'
 
 // MARK: - Collector
 

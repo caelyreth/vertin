@@ -30,10 +30,5 @@
   "files": [
     "LICENSE",
     "dist"
-  ],
-  "scripts": {
-    "dev": "tsdown --watch",
-    "build": "tsdown",
-    "typecheck": "tsc --noEmit"
-  }
+  ]
 }
