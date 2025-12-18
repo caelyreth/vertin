@@ -17,7 +17,7 @@ import type { Formatter } from './formatter'
 import type { Collector, Diagnostics, Message } from './types'
 import process from 'node:process'
 import { createFormatter } from './formatter'
-import { blue, cyan, magenta, normal, red, yellow } from './styler'
+import { blue, cyan, magenta, normal, red, yellow } from './tint'
 
 // MARK: - Internal Types
 
@@ -51,8 +51,8 @@ function displayGroup(heading: string, raw: string | string[], fmt: Formatter) {
 function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
   fmt.indent()
 
-  let sourceLine = diag.prefix ?? ''
-  let markupLine = diag.prefix ? ' '.repeat(diag.prefix.length) : ''
+  let sourceLine = ''
+  let markupLine = ''
 
   if (Array.isArray(diag.source)) {
     sourceLine += diag.source.join(' ')
