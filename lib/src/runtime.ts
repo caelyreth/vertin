@@ -142,6 +142,10 @@ function resolve_value(
   return resolve_unit(raw[raw.length - 1]!.value, resolver_unit(resolver))
 }
 
+function resolve_raw(raw: _RawValue, resolver: Resolver | undefined): unknown {
+  return resolve_unit(raw.value, resolver_unit(resolver))
+}
+
 // MARK: - snippets
 
 function merge_params(cmd: _Commands[string]): _Params {
@@ -317,13 +321,7 @@ function parse_arg_values(
       )
     }
 
-    const raw = isArray
-      ? values.slice(offset)
-      : values.slice(offset, offset + 1)
-
-    offset += raw.length
-
-    if (raw.length === 0) {
+    if (offset >= values.length) {
       if (has_fallback(spec)) parsed[key] = spec.fallback
       else if (is_required(spec, true)) {
         collector.submit(
@@ -337,21 +335,42 @@ function parse_arg_values(
       continue
     }
 
+    if (isArray) {
+      const raw = values.slice(offset)
+      offset = values.length
+
+      try {
+        parsed[key] = resolve_value(raw, spec.resolver)
+      } catch (reason: unknown) {
+        const first = raw[0]!
+        collector.submit(
+          token_error(
+            'Invalid argument value',
+            argv,
+            first.offset,
+            reason instanceof Error ? reason.message : `\`${key}\` is invalid`,
+          ),
+        )
+      }
+
+      break
+    }
+
+    const raw = values[offset]!
+    offset += 1
+
     try {
-      parsed[key] = resolve_value(raw, spec.resolver)
+      parsed[key] = resolve_raw(raw, spec.resolver)
     } catch (reason: unknown) {
-      const first = raw[0]!
       collector.submit(
         token_error(
           'Invalid argument value',
           argv,
-          first.offset,
+          raw.offset,
           reason instanceof Error ? reason.message : `\`${key}\` is invalid`,
         ),
       )
     }
-
-    if (isArray) break
   }
 
   for (const raw of values.slice(offset)) {

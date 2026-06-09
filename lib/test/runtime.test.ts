@@ -383,6 +383,33 @@ describe('runtime context construction', () => {
     expect(memory.text()).toContain('`--mode` is invalid')
   })
 
+  it('reports non-Error failures from array argument resolvers', async () => {
+    const fail_each = (raw: string) => {
+      throw `cannot decode ${raw}`
+    }
+    const import_assets = cmd(
+      {
+        args: args({
+          assets: { resolver: [fail_each] },
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      { sub: { import_assets } },
+      import_assets,
+      ['node', 'asset', 'import_assets', 'hero.png'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.args).toEqual({})
+    expect(memory.descriptions()).toEqual(['Invalid argument value'])
+    expect(memory.text()).toContain('`assets` is invalid')
+  })
+
   it('covers defensive parser edges for aliases, terminal flag values, and malformed array resolvers', async () => {
     const send = cmd(
       {
