@@ -2,7 +2,7 @@
  * @file Message collector subsystem.
  *
  * The collector centralizes non-throwing diagnostics and terminal output. It is
- * injected into handlers, validators, and other runtime contexts.
+ * injected into handlers, checks, and other runtime contexts.
  *
  * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
@@ -142,5 +142,6 @@ export function create_collector(): Collector {
         entry.logged = true
       }
     },
+    has_errors: () => queue.some(({ msg }) => msg.level === 'error'),
   }
 }

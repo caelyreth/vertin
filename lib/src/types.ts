@@ -76,6 +76,9 @@ export interface Collector {
 
   /** Collect and display all queued messages. */
   collect: (brief?: boolean) => void
+
+  /** Whether any submitted or logged message is an error. */
+  has_errors: () => boolean
 }
 
 // MARK: - Resolver
@@ -105,7 +108,7 @@ export type _ResolverCtor =
  * string.
  *
  * A {@link Resolver} controls the value type exposed through
- * {@link HandlerContext}. Use `constr` for user-facing validation and richer
+ * {@link HandlerContext}. Use `check` for user-facing audits and richer
  * diagnostics.
  */
 export type Resolver =
@@ -142,10 +145,10 @@ export type _Resolve<T extends Resolver> = T extends readonly (infer U)[]
     ? _ResolveUnit<U>[]
     : _ResolveUnit<T>
 
-// MARK: - Validator
+// MARK: - Check
 
-/** Working context of a validator. */
-export interface ValidatorContext<T> {
+/** Working context of a check function. */
+export interface CheckContext<T> {
   /** Raw value of current field. */
   readonly value: T
 
@@ -154,12 +157,12 @@ export interface ValidatorContext<T> {
 }
 
 /**
- * Function that validates a resolved value.
+ * Function that audits a resolved value.
  *
- * Validators centralize runtime checks, diagnostics, and future completion
+ * Checks centralize runtime audits, diagnostics, and future completion
  * metadata.
  */
-export type Validator<T> = (ctx: ValidatorContext<T>) => void
+export type Check<T> = (ctx: CheckContext<T>) => void | Promise<void>
 
 // MARK: - Parameter
 
@@ -191,8 +194,8 @@ interface _Param<T extends Resolver = Resolver> {
    */
   readonly required?: boolean
 
-  /** Validator function to check if the parameter is valid. */
-  readonly constr?: Validator<_Resolve<T>>
+  /** Check function to audit if the parameter is valid. */
+  readonly check?: Check<_Resolve<T>>
 }
 
 /** Argument parameter specification. */
@@ -239,9 +242,9 @@ export type _ResolverOf<T extends _Param> = T['resolver'] extends Resolver
  * @private
  */
 export type _ParamMap<T extends Record<string, _Param>> = {
-  [K in keyof T]: Omit<T[K], 'fallback' | 'constr'> & {
+  [K in keyof T]: Omit<T[K], 'fallback' | 'check'> & {
     fallback?: NoInfer<_Resolve<_ResolverOf<T[K]>>>
-    constr?: Validator<NoInfer<_Resolve<_ResolverOf<T[K]>>>>
+    check?: Check<NoInfer<_Resolve<_ResolverOf<T[K]>>>>
   }
 }
 
@@ -369,7 +372,7 @@ export interface Command<
   readonly use?: P
 
   /** Handler function of the command. */
-  readonly handler: (ctx: HandlerContext<A, F, P>) => void
+  readonly handler: (ctx: HandlerContext<A, F, P>) => void | Promise<void>
 }
 
 // MARK: - App
@@ -393,6 +396,12 @@ export interface App<C extends _Commands = _Commands> {
 
   /** Vertin framework configuration. */
   readonly config?: AppConfig
+}
+
+/** Application specification returned by {@link app}. */
+export interface RunnableApp<C extends _Commands = _Commands> extends App<C> {
+  /** Runs the application against the current process arguments. */
+  readonly run: () => Promise<void>
 }
 
 // MARK: - Utilities

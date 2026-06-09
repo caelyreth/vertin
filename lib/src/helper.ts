@@ -9,6 +9,7 @@
  * @license MIT
  */
 
+import { run as run_app } from './app'
 import type {
   _Args,
   _Commands,
@@ -16,10 +17,11 @@ import type {
   _ParamMap,
   _SnippetMap,
   App,
+  Check,
   Command,
   Message,
+  RunnableApp,
   Snippet,
-  Validator,
 } from './types'
 
 // MARK: - Subsystem
@@ -29,9 +31,9 @@ export function msg<T extends Message>(message: T): T {
   return message
 }
 
-/** Helper function to create a constraint. */
-export function constr<T>(validator: Validator<T>): Validator<T> {
-  return validator
+/** Helper function to create a check. */
+export function check<T>(fn: Check<T>): Check<T> {
+  return fn
 }
 
 // MARK: - Parameter
@@ -86,9 +88,13 @@ export function app<const C extends _Commands>(
     readonly sub?: C
   },
   config?: App<C>['config'],
-): App<C> {
-  return {
+): RunnableApp<C> {
+  const created = {
     ...spec,
     config,
+  } as App<C>
+  return {
+    ...created,
+    run: () => run_app(created),
   }
 }

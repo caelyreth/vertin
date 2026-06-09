@@ -6,12 +6,15 @@
  * @license MIT
  */
 
-export { app, args, cmd, constr, flags, msg, snippet } from './helper'
+export { run } from './app'
+export { app, args, check, cmd, flags, msg, snippet } from './helper'
 
 export type {
   App,
   AppConfig,
   Argument,
+  Check,
+  CheckContext,
   Collector,
   Command,
   Diagnostics,
@@ -19,8 +22,7 @@ export type {
   HandlerContext,
   Message,
   Resolver,
+  RunnableApp,
   Severity,
   Snippet,
-  Validator,
-  ValidatorContext,
 } from './types'

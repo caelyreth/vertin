@@ -1,0 +1,446 @@
+/**
+ * @file Runtime parsing and context construction.
+ *
+ * @copyright Yu 2026
+ * @author Yu <i@voidknot.com>
+ * @license MIT
+ */
+
+import type {
+  _Args,
+  _Flags,
+  _Many,
+  _ResolverCtor,
+  _ResolverFn,
+  App,
+  Argument,
+  Collector,
+  Command,
+  Flag,
+  HandlerContext,
+  Message,
+  Resolver,
+  Snippet,
+} from './types'
+
+// MARK: - Internal Types
+
+interface _RawValue {
+  readonly value: string
+  readonly offset: number
+  readonly token: string
+}
+
+interface _Params {
+  readonly args: _Args
+  readonly flags: _Flags
+}
+
+interface _ParsedArgv {
+  readonly args: _RawValue[]
+  readonly flags: Record<string, _RawValue[]>
+  readonly unkArgs: string[]
+  readonly unkFlags: string[]
+}
+
+type _RuntimeContext = HandlerContext<_Args, _Flags, Snippet[]>
+type _ResolverUnit = _ResolverFn | _ResolverCtor
+type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
+
+// MARK: - Diagnostics
+
+function error(desc: string, diag?: Message['diag']): Message {
+  return {
+    level: 'error',
+    desc,
+    diag,
+  }
+}
+
+function token_error(
+  desc: string,
+  argv: readonly string[],
+  offset: number,
+  markup: string,
+): Message {
+  return error(desc, {
+    source: Array.from(argv),
+    offset,
+    markup,
+    prefix: '> ',
+  })
+}
+
+// MARK: - Utilities
+
+function is_flag_token(token: string | undefined): token is string {
+  return token?.startsWith('-') === true && token !== '-'
+}
+
+function to_array<T>(value: _Many<T> | undefined): readonly T[] {
+  if (value === undefined) return []
+  return Array.isArray(value) ? value : [value]
+}
+
+function has_fallback(param: Argument | Flag): boolean {
+  return Object.hasOwn(param, 'fallback')
+}
+
+function is_required(param: Argument | Flag, fallback: boolean): boolean {
+  return param.required ?? fallback
+}
+
+function is_array_resolver(
+  resolver: Resolver | undefined,
+): resolver is _ResolverArray {
+  return Array.isArray(resolver)
+}
+
+function resolver_unit(
+  resolver: Resolver | undefined,
+): _ResolverUnit | undefined {
+  if (resolver === undefined) return undefined
+  if (is_array_resolver(resolver)) return resolver[0]
+  return resolver
+}
+
+function is_boolean_resolver(resolver: Resolver | undefined): boolean {
+  return resolver_unit(resolver) === Boolean
+}
+
+function can_read_as_value(
+  token: string | undefined,
+  resolver: Resolver | undefined,
+): token is string {
+  if (token === undefined) return false
+  if (!is_flag_token(token)) return true
+  return resolver_unit(resolver) === Number && !Number.isNaN(Number(token))
+}
+
+function resolve_unit(
+  raw: string,
+  resolver: _ResolverFn | _ResolverCtor = String,
+): string | number | boolean | unknown {
+  if (resolver === String) return raw
+  if (resolver === Number) {
+    const value = Number(raw)
+    if (Number.isNaN(value)) throw new Error(`\`${raw}\` is not a valid number`)
+    return value
+  }
+  if (resolver === Boolean) {
+    if (raw === 'true' || raw === '1') return true
+    if (raw === 'false' || raw === '0') return false
+    throw new Error(`\`${raw}\` is not a valid boolean value`)
+  }
+  return resolver(raw)
+}
+
+function resolve_value(
+  raw: readonly _RawValue[],
+  resolver: Resolver | undefined,
+): unknown {
+  if (is_array_resolver(resolver)) {
+    const unit = resolver_unit(resolver)
+    if (!unit) throw new Error('Array resolver must contain a resolver')
+    return raw.map(({ value }) => resolve_unit(value, unit))
+  }
+  return resolve_unit(raw[raw.length - 1]!.value, resolver_unit(resolver))
+}
+
+// MARK: - Snippets
+
+function merge_params(cmd: Command): _Params {
+  const args: _Args = {}
+  const flags: _Flags = {}
+
+  for (const part of cmd.use ?? []) {
+    Object.assign(args, part.args)
+    Object.assign(flags, part.flags)
+  }
+
+  Object.assign(args, cmd.args)
+  Object.assign(flags, cmd.flags)
+
+  return { args, flags }
+}
+
+// MARK: - Flag Parsing
+
+function flag_tokens(flags: _Flags): ReadonlyMap<string, string> {
+  const map = new Map<string, string>()
+
+  for (const [key, flag] of Object.entries(flags)) {
+    map.set(`--${key}`, key)
+    for (const alias of to_array(flag.alias)) {
+      map.set(alias.length === 1 ? `-${alias}` : `--${alias}`, key)
+    }
+  }
+
+  return map
+}
+
+function split_flag(token: string): readonly [string, string | undefined] {
+  const index = token.indexOf('=')
+  if (index === -1) return [token, undefined]
+  return [token.slice(0, index), token.slice(index + 1)]
+}
+
+function parse_argv(
+  argv: readonly string[],
+  offset: number,
+  flags: _Flags,
+  collector: Collector,
+): _ParsedArgv {
+  const parsed: _ParsedArgv = {
+    args: [],
+    flags: {},
+    unkArgs: [],
+    unkFlags: [],
+  }
+  const tokens = flag_tokens(flags)
+
+  for (let i = offset; i < argv.length; i++) {
+    const token = argv[i]!
+
+    if (token === '--') {
+      for (let j = i + 1; j < argv.length; j++) {
+        parsed.args.push({ value: argv[j]!, offset: j, token: argv[j]! })
+      }
+      break
+    }
+
+    if (!is_flag_token(token)) {
+      parsed.args.push({ value: token, offset: i, token })
+      continue
+    }
+
+    const [name, inline] = split_flag(token)
+    const key = tokens.get(name)
+
+    if (!key) {
+      parsed.unkFlags.push(token)
+      collector.submit(
+        token_error(
+          'Unknown flag occurred',
+          argv,
+          i,
+          `\`${token}\` is not a known flag`,
+        ),
+      )
+      continue
+    }
+
+    const flag = flags[key]!
+    const values = (parsed.flags[key] ??= [])
+
+    if (inline !== undefined) {
+      values.push({ value: inline, offset: i, token })
+      continue
+    }
+
+    if (is_boolean_resolver(flag.resolver)) {
+      values.push({ value: 'true', offset: i, token })
+      continue
+    }
+
+    const next = argv[i + 1]
+    if (!can_read_as_value(next, flag.resolver)) {
+      collector.submit(
+        token_error(
+          'Missing flag value',
+          argv,
+          i,
+          `\`${token}\` requires a value`,
+        ),
+      )
+      continue
+    }
+
+    i += 1
+    values.push({ value: next, offset: i, token: next })
+  }
+
+  return parsed
+}
+
+// MARK: - Parameter Parsing
+
+function parse_arg_values(
+  argv: readonly string[],
+  specs: _Args,
+  values: readonly _RawValue[],
+  unkArgs: string[],
+  collector: Collector,
+): Record<string, unknown> {
+  const parsed: Record<string, unknown> = {}
+  const entries = Object.entries(specs)
+  let offset = 0
+
+  for (let i = 0; i < entries.length; i++) {
+    const [key, spec] = entries[i]!
+    const raw = is_array_resolver(spec.resolver)
+      ? values.slice(offset)
+      : values.slice(offset, offset + 1)
+
+    offset += raw.length
+
+    if (raw.length === 0) {
+      if (has_fallback(spec)) parsed[key] = spec.fallback
+      else if (is_required(spec, true)) {
+        collector.submit(
+          error('Missing required argument', {
+            source: key,
+            offset: 0,
+            markup: `\`${key}\` is required`,
+          }),
+        )
+      }
+      continue
+    }
+
+    try {
+      parsed[key] = resolve_value(raw, spec.resolver)
+    } catch (reason: unknown) {
+      const first = raw[0]!
+      collector.submit(
+        token_error(
+          'Invalid argument value',
+          argv,
+          first.offset,
+          reason instanceof Error ? reason.message : `\`${key}\` is invalid`,
+        ),
+      )
+    }
+
+    if (is_array_resolver(spec.resolver)) break
+  }
+
+  for (const raw of values.slice(offset)) {
+    unkArgs.push(raw.value)
+    collector.submit(
+      token_error(
+        'Unknown argument occurred',
+        argv,
+        raw.offset,
+        `\`${raw.value}\` is not expected here`,
+      ),
+    )
+  }
+
+  return parsed
+}
+
+function parse_flag_values(
+  argv: readonly string[],
+  specs: _Flags,
+  values: Record<string, _RawValue[]>,
+  collector: Collector,
+): Record<string, unknown> {
+  const parsed: Record<string, unknown> = {}
+
+  for (const [key, spec] of Object.entries(specs)) {
+    const raw = values[key] ?? []
+
+    if (raw.length === 0) {
+      if (has_fallback(spec)) parsed[key] = spec.fallback
+      else if (is_required(spec, false)) {
+        collector.submit(
+          error('Missing required flag', {
+            source: `--${key}`,
+            offset: 0,
+            markup: `\`--${key}\` is required`,
+          }),
+        )
+      }
+      continue
+    }
+
+    if (!is_array_resolver(spec.resolver) && raw.length > 1) {
+      collector.submit(
+        error('Repeated flag occurred', {
+          source: `--${key}`,
+          offset: 0,
+          markup: `\`--${key}\` does not accept multiple values`,
+        }),
+      )
+    }
+
+    try {
+      parsed[key] = resolve_value(raw, spec.resolver)
+    } catch (reason: unknown) {
+      const first = raw[0]!
+      collector.submit(
+        token_error(
+          'Invalid flag value',
+          argv,
+          first.offset,
+          reason instanceof Error ? reason.message : `\`--${key}\` is invalid`,
+        ),
+      )
+    }
+  }
+
+  return parsed
+}
+
+// MARK: - Checks
+
+async function run_checks(
+  specs: _Args | _Flags,
+  values: Record<string, unknown>,
+  collector: Collector,
+) {
+  for (const [key, spec] of Object.entries(specs)) {
+    if (!spec.check || values[key] === undefined) continue
+
+    try {
+      await spec.check({ value: values[key] as never, collector })
+    } catch (reason: unknown) {
+      collector.submit(
+        error('Check failed', {
+          source: key,
+          offset: 0,
+          markup:
+            reason instanceof Error
+              ? reason.message
+              : `\`${key}\` did not pass its check`,
+        }),
+      )
+    }
+  }
+}
+
+// MARK: - Context
+
+export async function create_context(
+  app: App,
+  cmd: Command,
+  argv: readonly string[],
+  offset: number,
+  collector: Collector,
+): Promise<_RuntimeContext> {
+  const params = merge_params(cmd)
+  const parsed = parse_argv(argv, offset, params.flags, collector)
+  const args = parse_arg_values(
+    argv,
+    params.args,
+    parsed.args,
+    parsed.unkArgs,
+    collector,
+  )
+  const flags = parse_flag_values(argv, params.flags, parsed.flags, collector)
+
+  await run_checks(params.args, args, collector)
+  await run_checks(params.flags, flags, collector)
+
+  return {
+    args: args as _RuntimeContext['args'],
+    flags: flags as _RuntimeContext['flags'],
+    unkArgs: parsed.unkArgs,
+    unkFlags: parsed.unkFlags,
+    collector,
+    __internal__: {
+      app,
+    },
+  }
+}
