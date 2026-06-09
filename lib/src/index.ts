@@ -7,7 +7,7 @@
  */
 
 export { run } from './app'
-export { app, args, check, cmd, flags, msg, snippet } from './helper'
+export { app, args, check, cmd, flags, snippet } from './helper'
 
 export type {
   App,
@@ -15,14 +15,10 @@ export type {
   Argument,
   Check,
   CheckContext,
-  Collector,
   Command,
-  Diagnostics,
   Flag,
   HandlerContext,
-  Message,
   Resolver,
   RunnableApp,
-  Severity,
   Snippet,
 } from './types'

@@ -10,14 +10,14 @@
  * @license MIT
  */
 
-import type { Message } from './types'
+import type { _Message } from './types'
 
 // MARK: - Matching Stage
 
 export const no_command_specified = {
   level: 'warn',
   desc: 'No command specified; nothing runs',
-} satisfies Message
+} satisfies _Message
 
 /** Creates a diagnostic for an unknown command token. */
 export function invalid_command(
@@ -34,5 +34,5 @@ export function invalid_command(
       markup: `\`${token}\` is not a valid command`,
       prefix: '> ',
     },
-  } satisfies Message
+  } satisfies _Message
 }

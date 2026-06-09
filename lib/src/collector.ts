@@ -1,8 +1,8 @@
 /**
  * @file Message collector subsystem.
  *
- * The collector centralizes non-throwing diagnostics and terminal output. It is
- * injected into handlers, checks, and other runtime contexts.
+ * The collector centralizes framework diagnostics and terminal output. It stays
+ * internal to Vertin runtime and rendering.
  *
  * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
@@ -14,12 +14,12 @@ import process from 'node:process'
 import type { _Formatter } from './formatter'
 import { create_formatter } from './formatter'
 import { blue, cyan, magenta, normal, raw_len, red, yellow } from './tint'
-import type { _Many, Collector, Diagnostics, Message } from './types'
+import type { _Collector, _Diagnostics, _Many, _Message } from './types'
 
 // MARK: - Internal Types
 
 interface _QueuedMessage {
-  readonly msg: Message
+  readonly msg: _Message
   logged: boolean
 }
 
@@ -47,7 +47,7 @@ function display_group(heading: string, raw: _Many<string>, fmt: _Formatter) {
   fmt.shift()
 }
 
-function display_diagnostics(diag: Diagnostics, fmt: _Formatter) {
+function display_diagnostics(diag: _Diagnostics, fmt: _Formatter) {
   fmt.indent()
 
   const prefix = diag.prefix ?? ''
@@ -80,8 +80,8 @@ function display_diagnostics(diag: Diagnostics, fmt: _Formatter) {
 
   fmt.line(sourceLine)
   if (markupLine !== '') {
-    markupLine += diag.markup
-    fmt.line(markupLine)
+    const gap = markupLine.endsWith(' ') ? '' : ' '
+    fmt.line(`${markupLine}${gap}${diag.markup}`)
   }
 
   fmt.shift()
@@ -95,7 +95,7 @@ function display_diagnostics(diag: Diagnostics, fmt: _Formatter) {
   }
 }
 
-function display(msg: Message, brief: boolean = false) {
+function display(msg: _Message, brief: boolean = false) {
   const fmt = create_formatter()
   switch (msg.level) {
     case 'info':
@@ -120,7 +120,7 @@ function display(msg: Message, brief: boolean = false) {
 // MARK: - Collector
 
 /** Creates a new message collector with empty queue. */
-export function create_collector(): Collector {
+export function create_collector(): _Collector {
   const queue: _QueuedMessage[] = []
 
   return {

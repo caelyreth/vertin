@@ -19,17 +19,11 @@ import type {
   App,
   Check,
   Command,
-  Message,
   RunnableApp,
   Snippet,
 } from './types'
 
 // MARK: - Subsystem
-
-/** Helper function to create a typed message. */
-export function msg<T extends Message>(message: T): T {
-  return message
-}
 
 /** Helper function to create a check. */
 export function check<T>(fn: Check<T>): Check<T> {

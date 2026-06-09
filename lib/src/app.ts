@@ -12,7 +12,7 @@ import process from 'node:process'
 import { create_collector } from './collector'
 import { match } from './core'
 import { create_context } from './runtime'
-import type { App, Message } from './types'
+import type { _Message, App } from './types'
 import { is_err } from './utils'
 
 // MARK: - Utilities
@@ -25,7 +25,7 @@ function trim_argv(argv: readonly string[]): string[] {
 
 // MARK: - Run An App
 
-function handler_failed(reason: unknown): Message {
+function handler_failed(reason: unknown): _Message {
   return {
     level: 'error',
     desc: 'Handler failed',

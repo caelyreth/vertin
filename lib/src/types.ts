@@ -9,13 +9,13 @@
  * @license MIT
  */
 
-// MARK: - Collector
+// MARK: - Internal Diagnostics
 
-/** Severity level of a message in collector subsystem. */
-export type Severity = 'info' | 'warn' | 'error'
+/** Severity level of an internal runtime message. */
+export type _Severity = 'info' | 'warn' | 'error'
 
-/** Diagnostics of a message in collector subsystem. */
-export interface Diagnostics {
+/** Diagnostics of an internal runtime message. */
+export interface _Diagnostics {
   /** Optional text shown before the diagnostic source. */
   readonly prefix?: string
 
@@ -46,33 +46,33 @@ export interface Diagnostics {
   readonly hint?: _Many<string>
 }
 
-/** Message emitted by the collector subsystem. */
-export interface Message {
+/** Message emitted by the internal collector. */
+export interface _Message {
   /** Severity level of the message. */
-  readonly level: Severity
+  readonly level: _Severity
 
   /** Description of the message. */
   readonly desc: string
 
   /** Diagnostics of the message. */
-  readonly diag?: Diagnostics
+  readonly diag?: _Diagnostics
 }
 
-/** Collector interface. */
-export interface Collector {
+/** Internal collector interface. */
+export interface _Collector {
   /**
    * Log a message or messages to the collector.
    *
    * Will display the message immediately.
    */
-  log: (msgs: _Many<Message>, brief?: boolean) => void
+  log: (msgs: _Many<_Message>, brief?: boolean) => void
 
   /**
    * Submit a message or messages to the collector.
    *
    * Only queue the message, will not display it immediately.
    */
-  submit: (msgs: _Many<Message>, brief?: boolean) => void
+  submit: (msgs: _Many<_Message>, brief?: boolean) => void
 
   /** Collect and display all queued messages. */
   collect: (brief?: boolean) => void
@@ -149,20 +149,20 @@ export type _Resolve<T extends Resolver> = T extends readonly (infer U)[]
 
 /** Working context of a check function. */
 export interface CheckContext<T> {
-  /** Raw value of current field. */
+  /** Resolved value of current field. */
   readonly value: T
-
-  /** Collector subsystem context. */
-  readonly collector: Collector
 }
+
+type _CheckResult = void | boolean | string
 
 /**
  * Function that audits a resolved value.
  *
- * Checks centralize runtime audits, diagnostics, and future completion
- * metadata.
+ * Return `false` or a string to report a non-fail-fast check failure.
  */
-export type Check<T> = (ctx: CheckContext<T>) => void | Promise<void>
+export type Check<T> = (
+  ctx: CheckContext<T>,
+) => _CheckResult | Promise<_CheckResult>
 
 // MARK: - Parameter
 
@@ -326,9 +326,6 @@ export type HandlerContext<
   F extends _Flags,
   P extends Snippet[],
 > = _Parsed<A, F, P> & {
-  /** Collector subsystem context. */
-  readonly collector: Collector
-
   /**
    * Internal context for the command.
    *

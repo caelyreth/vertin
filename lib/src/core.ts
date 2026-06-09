@@ -9,7 +9,7 @@
  */
 
 import { invalid_command, no_command_specified } from './errors'
-import type { _Result, App, Command, Message } from './types'
+import type { _Message, _Result, App, Command } from './types'
 import { err, ok } from './utils'
 
 // MARK: - Constants & Utilities
@@ -35,7 +35,7 @@ export function match(
   spec: App,
   argv: readonly string[],
   offset: number = 2,
-): _Result<readonly [Command, number], Message> {
+): _Result<readonly [Command, number], _Message> {
   let token = argv[offset]
 
   if (is_flag(token)) {

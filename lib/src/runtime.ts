@@ -10,15 +10,15 @@ import type {
   _Args,
   _Flags,
   _Many,
+  _Collector,
+  _Message,
   _ResolverCtor,
   _ResolverFn,
   App,
   Argument,
-  Collector,
   Command,
   Flag,
   HandlerContext,
-  Message,
   Resolver,
   Snippet,
 } from './types'
@@ -49,7 +49,7 @@ type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
 
 // MARK: - Diagnostics
 
-function error(desc: string, diag?: Message['diag']): Message {
+function error(desc: string, diag?: _Message['diag']): _Message {
   return {
     level: 'error',
     desc,
@@ -62,7 +62,7 @@ function token_error(
   argv: readonly string[],
   offset: number,
   markup: string,
-): Message {
+): _Message {
   return error(desc, {
     source: Array.from(argv),
     offset,
@@ -189,7 +189,7 @@ function parse_argv(
   argv: readonly string[],
   offset: number,
   flags: _Flags,
-  collector: Collector,
+  collector: _Collector,
 ): _ParsedArgv {
   const parsed: _ParsedArgv = {
     args: [],
@@ -270,7 +270,7 @@ function parse_arg_values(
   specs: _Args,
   values: readonly _RawValue[],
   unkArgs: string[],
-  collector: Collector,
+  collector: _Collector,
 ): Record<string, unknown> {
   const parsed: Record<string, unknown> = {}
   const entries = Object.entries(specs)
@@ -334,7 +334,7 @@ function parse_flag_values(
   argv: readonly string[],
   specs: _Flags,
   values: Record<string, _RawValue[]>,
-  collector: Collector,
+  collector: _Collector,
 ): Record<string, unknown> {
   const parsed: Record<string, unknown> = {}
 
@@ -388,26 +388,37 @@ function parse_flag_values(
 async function run_checks(
   specs: _Args | _Flags,
   values: Record<string, unknown>,
-  collector: Collector,
+  collector: _Collector,
 ) {
   for (const [key, spec] of Object.entries(specs)) {
     if (!spec.check || values[key] === undefined) continue
 
     try {
-      await spec.check({ value: values[key] as never, collector })
+      const result = await spec.check({ value: values[key] as never })
+
+      if (result === true || result === undefined) continue
+
+      collector.submit(check_failed(key, result))
     } catch (reason: unknown) {
-      collector.submit(
-        error('Check failed', {
-          source: key,
-          offset: 0,
-          markup:
-            reason instanceof Error
-              ? reason.message
-              : `\`${key}\` did not pass its check`,
-        }),
-      )
+      collector.submit(check_failed(key, reason))
     }
   }
+}
+
+function check_failed(key: string, reason: unknown): _Message {
+  return error('Check failed', {
+    source: key,
+    offset: 0,
+    markup: check_markup(key, reason),
+  })
+}
+
+function check_markup(key: string, reason: unknown): string {
+  if (typeof reason === 'string' && reason.length > 0) return reason
+  if (reason instanceof Error && reason.message.length > 0)
+    return reason.message
+  if (reason !== false && reason !== undefined) return String(reason)
+  return `\`${key}\` did not pass its check`
 }
 
 // MARK: - Context
@@ -417,7 +428,7 @@ export async function create_context(
   cmd: Command,
   argv: readonly string[],
   offset: number,
-  collector: Collector,
+  collector: _Collector,
 ): Promise<_RuntimeContext> {
   const params = merge_params(cmd)
   const parsed = parse_argv(argv, offset, params.flags, collector)
@@ -438,7 +449,6 @@ export async function create_context(
     flags: flags as _RuntimeContext['flags'],
     unkArgs: parsed.unkArgs,
     unkFlags: parsed.unkFlags,
-    collector,
     __internal__: {
       app,
     },
