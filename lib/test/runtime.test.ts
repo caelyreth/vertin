@@ -289,6 +289,37 @@ describe('runtime context construction', () => {
     expect(memory.text()).toContain('already used by `output`')
   })
 
+  it('reports invalid flag names and aliases without registering malformed tokens', async () => {
+    const inspect = cmd(
+      {
+        flags: flags({
+          '': {},
+          '-bad': {},
+          debug: { alias: ['', '-d'] as const, resolver: Boolean },
+          good: { alias: 'g', resolver: Boolean },
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      { sub: { inspect } },
+      inspect,
+      ['node', 'tool', 'inspect', '-d', '-g'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.flags).toEqual({ good: true })
+    expect(ctx.unkFlags).toEqual(['-d'])
+    expect(memory.descriptions()).toEqual(
+      expect.arrayContaining(['Invalid flag schema', 'Unknown flag occurred']),
+    )
+    expect(memory.text()).toContain('Flag name must not be empty')
+    expect(memory.text()).toContain('Alias for `debug`')
+  })
+
   it('reports ambiguous positional schemas when a rest argument is not last', async () => {
     const move = cmd(
       {

@@ -172,10 +172,32 @@ function flag_tokens(
   const map = new Map<string, string>()
 
   for (const [key, flag] of Object.entries(flags)) {
+    if (!is_flag_name(key)) {
+      collector.submit(
+        error('Invalid flag schema', {
+          source: key,
+          offset: 0,
+          markup: 'Flag name must not be empty or start with `-`',
+        }),
+      )
+      continue
+    }
+
     set_flag_token(map, `--${key}`, key, collector)
     if (flag.alias === undefined) continue
 
     for (const alias of to_array(flag.alias)) {
+      if (!is_flag_alias(alias)) {
+        collector.submit(
+          error('Invalid flag schema', {
+            source: alias,
+            offset: 0,
+            markup: `Alias for \`${key}\` must not be empty or start with \`-\``,
+          }),
+        )
+        continue
+      }
+
       set_flag_token(
         map,
         alias.length === 1 ? `-${alias}` : `--${alias}`,
@@ -186,6 +208,14 @@ function flag_tokens(
   }
 
   return map
+}
+
+function is_flag_name(key: string): boolean {
+  return key.length > 0 && !key.startsWith('-')
+}
+
+function is_flag_alias(alias: string): boolean {
+  return alias.length > 0 && !alias.startsWith('-')
 }
 
 function set_flag_token(
