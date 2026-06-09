@@ -184,23 +184,19 @@ interface _Param<T extends Resolver = Resolver> {
   /** Fallback value if parameter field omitted. */
   readonly fallback?: _Resolve<T>
 
+  /**
+   * Whether the parameter must be provided when no fallback exists.
+   *
+   * Arguments default to `true`; flags default to `false`.
+   */
+  readonly required?: boolean
+
   /** Validator function to check if the parameter is valid. */
   readonly constr?: Validator<_Resolve<T>>
 }
 
-/**
- * Argument parameter specification.
- *
- * @template T {@link Resolver} used to parse the raw string value.
- */
-export interface Argument<T extends Resolver = Resolver> extends _Param<T> {
-  /**
-   * Whether the argument field is optional.
-   *
-   * @default false
-   */
-  readonly optional?: boolean
-}
+/** Argument parameter specification. */
+export type Argument<T extends Resolver = Resolver> = _Param<T>
 
 /**
  * Flag parameter specification.
@@ -208,13 +204,6 @@ export interface Argument<T extends Resolver = Resolver> extends _Param<T> {
  * @template T {@link Resolver} used to parse raw string value.
  */
 export interface Flag<T extends Resolver = Resolver> extends _Param<T> {
-  /**
-   * Whether the flag field is required.
-   *
-   * @default false
-   */
-  readonly required?: boolean
-
   /**
    * Alias for the flag field.
    *
@@ -256,22 +245,31 @@ export type _ParamMap<T extends Record<string, _Param>> = {
   }
 }
 
+type _Required<T extends _Param, D extends boolean> = T extends {
+  readonly required: infer R
+}
+  ? R extends true
+    ? true
+    : false
+  : D
+
+type _ParsedParam<T extends _Param, D extends boolean> =
+  T['fallback'] extends _Resolve<_ResolverOf<T>>
+    ? _Resolve<_ResolverOf<T>>
+    : _Required<T, D> extends infer R
+      ? R extends true
+        ? _Resolve<_ResolverOf<T>>
+        : _Resolve<_ResolverOf<T>> | undefined
+      : never
+
 /** Utility type to parse an argument record into resolved argument values. */
 type _ParsedArgs<T extends _Args> = {
-  [K in keyof T]: T[K]['fallback'] extends _Resolve<_ResolverOf<T[K]>>
-    ? _Resolve<_ResolverOf<T[K]>>
-    : T[K]['optional'] extends true
-      ? _Resolve<_ResolverOf<T[K]>> | undefined
-      : _Resolve<_ResolverOf<T[K]>>
+  [K in keyof T]: _ParsedParam<T[K], true>
 }
 
 /** Utility type to parse a flag record into resolved flag values. */
 type _ParsedFlags<T extends _Flags> = {
-  [K in keyof T]: T[K]['fallback'] extends _Resolve<_ResolverOf<T[K]>>
-    ? _Resolve<_ResolverOf<T[K]>>
-    : T[K]['required'] extends true
-      ? _Resolve<_ResolverOf<T[K]>>
-      : _Resolve<_ResolverOf<T[K]>> | undefined
+  [K in keyof T]: _ParsedParam<T[K], false>
 }
 
 /**
