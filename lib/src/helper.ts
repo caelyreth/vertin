@@ -10,17 +10,13 @@
  */
 
 import type {
-  _CommandCategoriesMap,
   _Args,
   _Commands,
   _Flags,
   _ParamMap,
-  _SectionMap,
   _SnippetMap,
   App,
   Command,
-  CommandCategory,
-  FlagSection,
   Message,
   Snippet,
   Validator,
@@ -65,21 +61,17 @@ export function snippet<const T extends Snippet & _SnippetMap<T>>(
 export function cmd<
   const A extends _Args & _ParamMap<A>,
   const F extends _Flags & _ParamMap<F>,
-  const S extends FlagSection[] & _SectionMap<S, F>,
   const C extends _Commands,
-  const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,
   const P extends Snippet[],
 >(
-  spec: Omit<Command<A, F, S, C, G, P>, 'handler'> & {
+  spec: Omit<Command<A, F, C, P>, 'handler'> & {
     readonly args?: A
     readonly flags?: F
-    readonly sections?: S
     readonly sub?: C
-    readonly categories?: G
     readonly use?: P
   },
-  handler: Command<A, F, S, C, G, P>['handler'],
-): Command<A, F, S, C, G, P> {
+  handler: Command<A, F, C, P>['handler'],
+): Command<A, F, C, P> {
   return {
     ...spec,
     handler,
@@ -89,16 +81,12 @@ export function cmd<
 // MARK: - App
 
 /** Helper function to create an application. */
-export function app<
-  const C extends _Commands,
-  const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,
->(
-  spec: Omit<App<C, G>, 'config'> & {
+export function app<const C extends _Commands>(
+  spec: Omit<App<C>, 'config'> & {
     readonly sub?: C
-    readonly categories?: G
   },
-  config?: App<C, G>['config'],
-): App<C, G> {
+  config?: App<C>['config'],
+): App<C> {
   return {
     ...spec,
     config,

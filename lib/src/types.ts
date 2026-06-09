@@ -9,8 +9,6 @@
  * @license MIT
  */
 
-import type { Styler } from './tint'
-
 // MARK: - Collector
 
 /** Severity level of a message in collector subsystem. */
@@ -96,12 +94,6 @@ export type _ResolverFn<R = unknown> = (raw: string) => R
  *
  * Vertin only supports a subset of built-in constructors. You can use a
  * function resolver to support other types in construction.
- *
- * @example
- *   String
- *   Number
- *   Boolean
- *   ```
  */
 export type _ResolverCtor =
   | StringConstructor
@@ -238,18 +230,6 @@ export type _Args = Record<string, Argument>
 /** Record type for flag specifications. */
 export type _Flags = Record<string, Flag>
 
-/** Section style flag specification. */
-export interface FlagSection<T extends _Flags = _Flags> {
-  /** Brief description of the flag section. */
-  readonly desc?: string
-
-  /** Tint color of the flag section. */
-  readonly styler?: Styler
-
-  /** Flags in the flag section. */
-  readonly flags: (keyof T)[]
-}
-
 // MARK: - Parsed Parameter
 
 /**
@@ -274,15 +254,6 @@ export type _ParamMap<T extends Record<string, _Param>> = {
     fallback?: NoInfer<_Resolve<_ResolverOf<T[K]>>>
     constr?: Validator<NoInfer<_Resolve<_ResolverOf<T[K]>>>>
   }
-}
-
-/**
- * Utility type to map a flag record into flag sections.
- *
- * @private
- */
-export type _SectionMap<S extends FlagSection[], F extends _Flags> = {
-  [K in keyof S]: S[K] extends FlagSection ? FlagSection<F> : never
 }
 
 /** Utility type to parse an argument record into resolved argument values. */
@@ -333,26 +304,18 @@ export interface _Parsed<
 
 // MARK: - Snippet
 
-export interface Snippet<
-  A extends _Args = _Args,
-  F extends _Flags = _Flags,
-  S extends FlagSection[] = FlagSection[],
-> {
+export interface Snippet<A extends _Args = _Args, F extends _Flags = _Flags> {
   /** Arguments in the snippet. */
   readonly args?: A
 
   /** Flags in the snippet. */
   readonly flags?: F
-
-  /** Sections of flags in the snippet. */
-  readonly sections?: S
 }
 
 /** Utility type to preserve snippet-level inference. */
 export type _SnippetMap<T extends Snippet> = Snippet & {
   flags?: _Flags & _ParamMap<NonNullable<T['flags']>>
   args?: _Args & _ParamMap<NonNullable<T['args']>>
-  sections?: _SectionMap<NonNullable<T['sections']>, NonNullable<T['flags']>>
 }
 
 // MARK: - Command
@@ -389,9 +352,7 @@ export type _Commands = Record<string, Command>
 export interface Command<
   A extends _Args = _Args,
   F extends _Flags = _Flags,
-  S extends FlagSection[] = FlagSection[],
   C extends _Commands = _Commands,
-  G extends CommandCategory[] = CommandCategory[],
   P extends Snippet[] = Snippet[],
 > {
   /** Brief description of command. */
@@ -403,14 +364,8 @@ export interface Command<
   /** Flags of the command. */
   readonly flags?: F
 
-  /** Sections of flags in the command. */
-  readonly sections?: S
-
   /** Sub-commands of the command. */
   readonly sub?: C
-
-  /** Command category grouping. */
-  readonly categories?: G
 
   /** Snippets used in the command. */
   readonly use?: P
@@ -419,40 +374,13 @@ export interface Command<
   readonly handler: (ctx: HandlerContext<A, F, P>) => void
 }
 
-/** Section-style grouping for related subcommands. */
-export interface CommandCategory<T extends _Commands = _Commands> {
-  /** Brief description of the command category. */
-  readonly desc?: string
-
-  /** Tint color of the command category. */
-  readonly styler?: Styler
-
-  /** Commands in the command category. */
-  readonly cmds: (keyof T)[]
-}
-
-/**
- * Utility type to map a command record into command categories.
- *
- * @private
- */
-export type _CommandCategoriesMap<
-  S extends CommandCategory[],
-  C extends _Commands,
-> = {
-  [K in keyof S]: S[K] extends CommandCategory ? CommandCategory<C> : never
-}
-
 // MARK: - App
 
 /** Vertin framework configuration. */
 export interface AppConfig {}
 
 /** Application specification. */
-export interface App<
-  C extends _Commands = _Commands,
-  G extends CommandCategory[] = CommandCategory[],
-> {
+export interface App<C extends _Commands = _Commands> {
   /** Brief description of the app. */
   readonly desc?: string
 
@@ -464,9 +392,6 @@ export interface App<
 
   /** Sub-commands of the app. */
   readonly sub?: C
-
-  /** Command category grouping. */
-  readonly categories?: G
 
   /** Vertin framework configuration. */
   readonly config?: AppConfig
