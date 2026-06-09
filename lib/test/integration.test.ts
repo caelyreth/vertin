@@ -1,28 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { app, args, check, cmd, flags, snippet } from '../src'
+import { capture_stderr, type _CapturedStderr } from './shared'
 
 let originalArgv: string[]
 let originalExitCode: typeof process.exitCode
-let originalStderrWrite: typeof process.stderr.write
-let stderr: string[]
+let stderr: _CapturedStderr
 
 beforeEach(() => {
   originalArgv = process.argv
   originalExitCode = process.exitCode
-  originalStderrWrite = process.stderr.write
-  stderr = []
   process.exitCode = undefined
-  process.stderr.write = ((chunk: string | Uint8Array) => {
-    stderr.push(String(chunk))
-    return true
-  }) as typeof process.stderr.write
+  stderr = capture_stderr()
 })
 
 afterEach(() => {
   process.argv = originalArgv
   process.exitCode = originalExitCode
-  process.stderr.write = originalStderrWrite
+  stderr.restore()
 })
 
 describe('public app runner', () => {
@@ -74,7 +69,7 @@ describe('public app runner', () => {
     await cli.run()
 
     expect(process.exitCode).toBeUndefined()
-    expect(stderr.join('')).toBe('')
+    expect(stderr.text()).toBe('')
     expect(received).toHaveLength(1)
     expect(received[0]).toMatchObject({
       args: { packageName: '@acme/web' },
@@ -126,9 +121,9 @@ describe('public app runner', () => {
 
     expect(handled).toBe(false)
     expect(process.exitCode).toBe(1)
-    expect(stderr.join('')).toContain('Invalid flag value')
-    expect(stderr.join('')).toContain('Unknown flag occurred')
-    expect(stderr.join('')).toContain('Check failed')
+    expect(stderr.text()).toContain('Invalid flag value')
+    expect(stderr.text()).toContain('Unknown flag occurred')
+    expect(stderr.text()).toContain('Check failed')
   })
 
   it('reports command matching and handler failures through internal diagnostics', async () => {
@@ -137,9 +132,9 @@ describe('public app runner', () => {
     await app({}).run()
 
     expect(process.exitCode).toBe(1)
-    expect(stderr.join('')).toContain('Invalid command occurred')
+    expect(stderr.text()).toContain('Invalid command occurred')
 
-    stderr = []
+    stderr.chunks.length = 0
     process.exitCode = undefined
     process.argv = ['node', 'craft', 'explode']
 
@@ -152,7 +147,23 @@ describe('public app runner', () => {
     }).run()
 
     expect(process.exitCode).toBe(1)
-    expect(stderr.join('')).toContain('Handler failed')
-    expect(stderr.join('')).toContain('database unavailable')
+    expect(stderr.text()).toContain('Handler failed')
+    expect(stderr.text()).toContain('database unavailable')
+  })
+
+  it('reports non-Error handler failures without losing exit semantics', async () => {
+    process.argv = ['node', 'craft', 'explode']
+
+    await app({
+      sub: {
+        explode: cmd({}, () => {
+          throw 'permission denied'
+        }),
+      },
+    }).run()
+
+    expect(process.exitCode).toBe(1)
+    expect(stderr.text()).toContain('Handler failed')
+    expect(stderr.text()).toContain('permission denied')
   })
 })

@@ -7,13 +7,16 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['lib/src/**/*.ts'],
-      exclude: ['lib/src/types.ts'],
+      exclude: [
+        'lib/src/types.ts',
+        'lib/src/tint.ts', // refer to `@uttr/tint`
+      ],
       reporter: ['text', 'json', 'html'],
       thresholds: {
-        lines: 85,
-        functions: 85,
-        branches: 80,
-        statements: 85,
+        lines: 100,
+        functions: 100,
+        branches: 98,
+        statements: 100,
       },
     },
   },

@@ -4,6 +4,7 @@ import { create_collector } from '../src/collector'
 import { args, check, cmd, flags, snippet } from '../src/helper'
 import { create_context } from '../src/runtime'
 import type { _Collector } from '../src/types'
+import { memory_collector } from './shared'
 
 function quiet_collector(): _Collector {
   const collector = create_collector()
@@ -101,7 +102,7 @@ describe('runtime context construction', () => {
       },
       () => {},
     )
-    const collector = quiet_collector()
+    const memory = memory_collector()
 
     const ctx = await create_context(
       { sub: { create } },
@@ -121,14 +122,23 @@ describe('runtime context construction', () => {
         '--port=2',
       ],
       3,
-      collector,
+      memory.collector,
     )
 
     expect(ctx.args).toEqual({ name: 'blog' })
     expect(ctx.flags).toEqual({ force: false, port: 2 })
     expect(ctx.unkArgs).toEqual(['extra'])
     expect(ctx.unkFlags).toEqual(['--unknown'])
-    expect(collector.has_errors()).toBe(true)
+    expect(memory.collector.has_errors()).toBe(true)
+    expect(memory.descriptions()).toEqual(
+      expect.arrayContaining([
+        'Invalid argument value',
+        'Unknown argument occurred',
+        'Missing flag value',
+        'Unknown flag occurred',
+        'Repeated flag occurred',
+      ]),
+    )
   })
 
   it('handles missing positional arguments, optional omissions, fallbacks, and failed checks', async () => {
@@ -142,18 +152,19 @@ describe('runtime context construction', () => {
       },
       () => {},
     )
-    const missingCollector = quiet_collector()
+    const missingMemory = memory_collector()
 
     const missingCtx = await create_context(
       { sub: { missing } },
       missing,
       ['node', 'craft', 'missing'],
       3,
-      missingCollector,
+      missingMemory.collector,
     )
 
     expect(missingCtx.args).toEqual({ kind: 'app' })
-    expect(missingCollector.has_errors()).toBe(true)
+    expect(missingMemory.collector.has_errors()).toBe(true)
+    expect(missingMemory.descriptions()).toContain('Missing required argument')
 
     const audit = cmd(
       {
@@ -168,22 +179,35 @@ describe('runtime context construction', () => {
             resolver: String,
             check: check<string>(() => false),
           },
+          owner: {
+            resolver: String,
+            check: check<string>(() => {
+              throw 404
+            }),
+          },
         }),
       },
       () => {},
     )
-    const auditCollector = quiet_collector()
+    const auditMemory = memory_collector()
 
     const auditCtx = await create_context(
       { sub: { audit } },
       audit,
-      ['node', 'craft', 'audit', 'abc123', 'Draft'],
+      ['node', 'craft', 'audit', 'abc123', 'Draft', 'team'],
       3,
-      auditCollector,
+      auditMemory.collector,
     )
 
-    expect(auditCtx.args).toEqual({ token: 'abc123', label: 'Draft' })
-    expect(auditCollector.has_errors()).toBe(true)
+    expect(auditCtx.args).toEqual({
+      token: 'abc123',
+      label: 'Draft',
+      owner: 'team',
+    })
+    expect(auditMemory.collector.has_errors()).toBe(true)
+    expect(auditMemory.text()).toContain('token expired')
+    expect(auditMemory.text()).toContain('`label` did not pass its check')
+    expect(auditMemory.text()).toContain('404')
   })
 
   it('allows negative number flag values and positional values after the terminator', async () => {
@@ -211,5 +235,133 @@ describe('runtime context construction', () => {
     expect(ctx.args).toEqual({ delta: -2 })
     expect(ctx.flags).toEqual({ threshold: -10 })
     expect(collector.has_errors()).toBe(false)
+  })
+
+  it('supports positional rest values and omitted optional flags', async () => {
+    const archive = cmd(
+      {
+        args: args({
+          files: { resolver: [String] },
+        }),
+        flags: flags({
+          format: { required: false },
+        }),
+      },
+      () => {},
+    )
+    const collector = quiet_collector()
+
+    const ctx = await create_context(
+      { sub: { archive } },
+      archive,
+      ['node', 'pack', 'archive', 'README.md', 'src/index.ts'],
+      3,
+      collector,
+    )
+
+    expect(ctx.args).toEqual({ files: ['README.md', 'src/index.ts'] })
+    expect(ctx.flags).toEqual({})
+    expect(collector.has_errors()).toBe(false)
+  })
+
+  it('supports custom resolvers and reports invalid boolean values', async () => {
+    const as_date = (raw: string) => new Date(`${raw}T00:00:00.000Z`)
+    const schedule = cmd(
+      {
+        args: args({
+          when: {
+            resolver: as_date,
+          },
+        }),
+        flags: flags({
+          published: { resolver: Boolean },
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      { sub: { schedule } },
+      schedule,
+      ['node', 'cms', 'schedule', '2026-06-09', '--published=maybe'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.args.when).toEqual(new Date('2026-06-09T00:00:00.000Z'))
+    expect(ctx.flags).toEqual({})
+    expect(memory.collector.has_errors()).toBe(true)
+    expect(memory.text()).toContain('not a valid boolean value')
+  })
+
+  it('reports non-Error resolver failures for arguments and flags', async () => {
+    const fail_arg = (raw: string) => {
+      throw `cannot read ${raw}`
+    }
+    const fail_flag = (raw: string) => {
+      throw `bad mode ${raw}`
+    }
+    const convert = cmd(
+      {
+        args: args({
+          input: { resolver: fail_arg },
+        }),
+        flags: flags({
+          mode: { resolver: fail_flag },
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      { sub: { convert } },
+      convert,
+      ['node', 'asset', 'convert', 'design.fig', '--mode=fast'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.args).toEqual({})
+    expect(ctx.flags).toEqual({})
+    expect(memory.descriptions()).toEqual([
+      'Invalid argument value',
+      'Invalid flag value',
+    ])
+    expect(memory.text()).toContain('`input` is invalid')
+    expect(memory.text()).toContain('`--mode` is invalid')
+  })
+
+  it('covers defensive parser edges for aliases, terminal flag values, and malformed array resolvers', async () => {
+    const send = cmd(
+      {
+        args: args({
+          files: { resolver: [] as unknown as [StringConstructor] },
+        }),
+        flags: flags({
+          force: { alias: ['f', 'force'], resolver: Boolean },
+          output: {},
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      { sub: { send } },
+      send,
+      ['node', 'mail', 'send', 'letter.md', '-f', '--output'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.args).toEqual({})
+    expect(ctx.flags).toEqual({ force: true })
+    expect(memory.descriptions()).toEqual([
+      'Missing flag value',
+      'Invalid argument value',
+    ])
+    expect(memory.text()).toContain('Array resolver must contain a resolver')
   })
 })
