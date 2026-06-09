@@ -50,11 +50,13 @@ type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
 
 interface _RuntimeTweaks {
   readonly booleanNegation: boolean
+  readonly shortBooleanClusters: boolean
   readonly negativeNumberValues: boolean
 }
 
 const default_tweaks: _RuntimeTweaks = {
   booleanNegation: true,
+  shortBooleanClusters: true,
   negativeNumberValues: true,
 }
 
@@ -132,6 +134,8 @@ function runtime_tweaks(config: AppConfig | undefined): _RuntimeTweaks {
 
   return {
     booleanNegation: tweaks.booleanNegation ?? default_tweaks.booleanNegation,
+    shortBooleanClusters:
+      tweaks.shortBooleanClusters ?? default_tweaks.shortBooleanClusters,
     negativeNumberValues:
       tweaks.negativeNumberValues ?? default_tweaks.negativeNumberValues,
   }
@@ -271,6 +275,16 @@ function split_flag(token: string): readonly [string, string | undefined] {
   return [token.slice(0, index), token.slice(index + 1)]
 }
 
+function boolean_flag_key(
+  token: string,
+  tokens: ReadonlyMap<string, string>,
+  flags: _Flags,
+): string | undefined {
+  const key = tokens.get(token)
+  if (!key || !is_boolean_resolver(flags[key]?.resolver)) return undefined
+  return key
+}
+
 function negated_boolean_key(
   name: string,
   inline: string | undefined,
@@ -281,9 +295,40 @@ function negated_boolean_key(
   if (!tweaks.booleanNegation || inline !== undefined) return undefined
   if (!name.startsWith('--no-')) return undefined
 
-  const key = tokens.get(`--${name.slice(5)}`)
-  if (!key || !is_boolean_resolver(flags[key]?.resolver)) return undefined
-  return key
+  return boolean_flag_key(`--${name.slice(5)}`, tokens, flags)
+}
+
+function short_boolean_cluster_keys(
+  name: string,
+  inline: string | undefined,
+  tokens: ReadonlyMap<string, string>,
+  flags: _Flags,
+  tweaks: _RuntimeTweaks,
+): readonly string[] | undefined {
+  if (!tweaks.shortBooleanClusters || inline !== undefined) return undefined
+  if (name.startsWith('--') || !name.startsWith('-') || name.length <= 2)
+    return undefined
+
+  const keys: string[] = []
+
+  for (let i = 1; i < name.length; i++) {
+    const key = boolean_flag_key(`-${name[i]!}`, tokens, flags)
+    if (!key) return undefined
+    keys.push(key)
+  }
+
+  return keys
+}
+
+function push_flag_value(
+  parsed: _ParsedArgv,
+  key: string,
+  value: string,
+  offset: number,
+  token: string,
+) {
+  const values = (parsed.flags[key] ??= [])
+  values.push({ value, offset, token })
 }
 
 function parse_argv(
@@ -326,6 +371,21 @@ function parse_argv(
     }
 
     if (!key) {
+      const keys = short_boolean_cluster_keys(
+        name,
+        inline,
+        tokens,
+        flags,
+        tweaks,
+      )
+
+      if (keys) {
+        for (const key of keys) push_flag_value(parsed, key, 'true', i, token)
+        continue
+      }
+    }
+
+    if (!key) {
       parsed.unkFlags.push(token)
       collector.submit(
         token_error(
@@ -339,20 +399,19 @@ function parse_argv(
     }
 
     const flag = flags[key]!
-    const values = (parsed.flags[key] ??= [])
 
     if (negated) {
-      values.push({ value: 'false', offset: i, token })
+      push_flag_value(parsed, key, 'false', i, token)
       continue
     }
 
     if (inline !== undefined) {
-      values.push({ value: inline, offset: i, token })
+      push_flag_value(parsed, key, inline, i, token)
       continue
     }
 
     if (is_boolean_resolver(flag.resolver)) {
-      values.push({ value: 'true', offset: i, token })
+      push_flag_value(parsed, key, 'true', i, token)
       continue
     }
 
@@ -370,7 +429,7 @@ function parse_argv(
     }
 
     i += 1
-    values.push({ value: next, offset: i, token: next })
+    push_flag_value(parsed, key, next, i, next)
   }
 
   return parsed

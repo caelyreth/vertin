@@ -296,11 +296,62 @@ describe('runtime context construction', () => {
     expect(partialConfig.has_errors()).toBe(false)
   })
 
-  it('can disable boolean negation and negative number flag values through parser tweaks', async () => {
+  it('supports short boolean clusters and rejects ambiguous clusters', async () => {
+    const list = cmd(
+      {
+        flags: flags({
+          all: { alias: 'a', resolver: Boolean, fallback: false },
+          long: { alias: 'l', resolver: Boolean, fallback: false },
+          human: { alias: 'h', resolver: Boolean, fallback: false },
+          output: { alias: 'o', fallback: 'stdout' },
+        }),
+      },
+      () => {},
+    )
+    const collector = quiet_collector()
+
+    const ctx = await create_context(
+      { sub: { list } },
+      list,
+      ['node', 'fs', 'list', '-alh'],
+      3,
+      collector,
+    )
+
+    expect(ctx.flags).toEqual({
+      all: true,
+      long: true,
+      human: true,
+      output: 'stdout',
+    })
+    expect(collector.has_errors()).toBe(false)
+
+    const memory = memory_collector()
+    const edgeCtx = await create_context(
+      { sub: { list } },
+      list,
+      ['node', 'fs', 'list', '-ao'],
+      3,
+      memory.collector,
+    )
+
+    expect(edgeCtx.flags).toEqual({
+      all: false,
+      long: false,
+      human: false,
+      output: 'stdout',
+    })
+    expect(edgeCtx.unkFlags).toEqual(['-ao'])
+    expect(memory.descriptions()).toEqual(['Unknown flag occurred'])
+  })
+
+  it('can disable parser compatibility tweaks', async () => {
     const serve = cmd(
       {
         flags: flags({
           cache: { resolver: Boolean, fallback: true },
+          all: { alias: 'a', resolver: Boolean, fallback: false },
+          long: { alias: 'l', resolver: Boolean, fallback: false },
           threshold: { resolver: Number },
         }),
       },
@@ -313,20 +364,22 @@ describe('runtime context construction', () => {
         config: {
           tweaks: {
             booleanNegation: false,
+            shortBooleanClusters: false,
             negativeNumberValues: false,
           },
         },
         sub: { serve },
       },
       serve,
-      ['node', 'web', 'serve', '--no-cache', '--threshold', '-10'],
+      ['node', 'web', 'serve', '--no-cache', '-al', '--threshold', '-10'],
       3,
       memory.collector,
     )
 
-    expect(ctx.flags).toEqual({ cache: true })
-    expect(ctx.unkFlags).toEqual(['--no-cache', '-10'])
+    expect(ctx.flags).toEqual({ cache: true, all: false, long: false })
+    expect(ctx.unkFlags).toEqual(['--no-cache', '-al', '-10'])
     expect(memory.descriptions()).toEqual([
+      'Unknown flag occurred',
       'Unknown flag occurred',
       'Missing flag value',
       'Unknown flag occurred',

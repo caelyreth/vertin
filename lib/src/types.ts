@@ -392,6 +392,14 @@ export interface AppTweaks {
   readonly booleanNegation?: boolean
 
   /**
+   * Parse `-abc` as `-a -b -c` when every member is a Boolean flag.
+   *
+   * @default
+   * `true`
+   */
+  readonly shortBooleanClusters?: boolean
+
+  /**
    * Treat negative numeric tokens as values for Number flags.
    *
    * @default
