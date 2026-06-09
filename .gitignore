@@ -1,10 +1,14 @@
-# runtime and dependencies
+# runtime + dependencies
 node_modules
 
 # development
 dist
 coverage
 references
+
+# preferences
+/.vscode
+/.zed
 
 # os related
 .DS_Store

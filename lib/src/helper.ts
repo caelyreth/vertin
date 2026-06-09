@@ -28,43 +28,26 @@ import type {
 
 // MARK: - Subsystem
 
-/**
- *
- */
-export function msg<T extends Message>(
-  message: T,
-): T {
+export function msg<T extends Message>(message: T): T {
   return message
 }
 
-/**
- * Helper function to create a constraint.
- */
-export function constr<T>(
-  validator: Validator<T>,
-): Validator<T> {
+/** Helper function to create a constraint. */
+export function constr<T>(validator: Validator<T>): Validator<T> {
   return validator
 }
 
 // MARK: - Parameter
 
-/**
- * Helper function to create an record of argument parameters.
- */
-export function args<
-  const T extends ArgumentRecord & _ParameterMap<T>,
->(
+/** Helper function to create an record of argument parameters. */
+export function args<const T extends ArgumentRecord & _ParameterMap<T>>(
   record: T,
 ): T {
   return record
 }
 
-/**
- * Helper function to create an record of flag parameters.
- */
-export function flags<
-  const T extends FlagRecord & _ParameterMap<T>,
->(
+/** Helper function to create an record of flag parameters. */
+export function flags<const T extends FlagRecord & _ParameterMap<T>>(
   record: T,
 ): T {
   return record
@@ -72,12 +55,8 @@ export function flags<
 
 // MARK: - Snippet
 
-/**
- * Helper function to create a reusable parameter specification.
- */
-export function snippet<
-  const T extends Snippet & _SnippetMap<T>,
->(
+/** Helper function to create a reusable parameter specification. */
+export function snippet<const T extends Snippet & _SnippetMap<T>>(
   records: T,
 ): T {
   return records
@@ -85,9 +64,7 @@ export function snippet<
 
 // MARK: - Command
 
-/**
- * Helper function to create a command.
- */
+/** Helper function to create a command. */
 export function cmd<
   const A extends ArgumentRecord & _ParameterMap<A>,
   const F extends FlagRecord & _ParameterMap<F>,
@@ -114,9 +91,7 @@ export function cmd<
 
 // MARK: - App
 
-/**
- * Helper function to create an application.
- */
+/** Helper function to create an application. */
 export function app<
   const C extends CommandRecord,
   const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,

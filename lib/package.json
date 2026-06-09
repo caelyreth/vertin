@@ -1,20 +1,26 @@
 {
   "name": "vertin",
-  "type": "module",
   "version": "0.4.0-dev",
   "description": "A universal command line app helper",
-  "author": "Kohane <i@kept.to>",
-  "license": "MPL-2.0",
+  "keywords": [
+    "args",
+    "cli"
+  ],
   "homepage": "https://github.com/utakotoba/vertin#readme",
+  "license": "MPL-2.0",
+  "author": "Kohane <i@kept.to>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/utakotoba/vertin.git",
     "directory": "packages/vertin"
   },
-  "keywords": ["cli", "args"],
-  "publishConfig": {
-    "access": "public"
-  },
+  "files": [
+    "LICENSE",
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "types": "./dist/index.d.mts",
@@ -25,10 +31,7 @@
       "import": "./dist/tint.mjs"
     }
   },
-  "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
-  "files": [
-    "LICENSE",
-    "dist"
-  ]
+  "publishConfig": {
+    "access": "public"
+  }
 }

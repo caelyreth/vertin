@@ -77,7 +77,8 @@ export function mapOk<T, E, U>(
  * Maps a function over the error value.
  *
  * If the result is Failure<E>, applies the mapper function to E to produce F,
- * returning Failure<F>. If the result is Success<T>, returns Success<T> unchanged.
+ * returning Failure<F>. If the result is Success<T>, returns Success<T>
+ * unchanged.
  *
  * @param result The result to map over.
  * @param mapper The mapping function to apply to the error value.
@@ -93,8 +94,8 @@ export function mapErr<T, E, F>(
 }
 
 /**
- * Returns the inner success value if the result is Ok<T>.
- * Otherwise, returns the provided default value.
+ * Returns the inner success value if the result is Ok<T>. Otherwise, returns
+ * the provided default value.
  *
  * @param result The result to unwrap.
  * @param fallback The default value to return if the result is a failure.

@@ -9,38 +9,30 @@
  * @license MPL-2.0
  */
 
-/**
- * Interface for the stateful Formatter object returned by createFormatter.
- */
+/** Interface for the stateful Formatter object returned by createFormatter. */
 export interface Formatter {
-  /**
-   * Adds a line of text to the output, applying the current indentation level.
-   */
+  /** Adds a line of text to the output, applying the current indentation level. */
   line: (raw: string) => void
 
-  /**
-   * Increases the current indentation level by one unit.
-   */
+  /** Increases the current indentation level by one unit. */
   indent: () => void
 
   /**
-   * Decreases the current indentation level by one unit. Throws if already at base level.
+   * Decreases the current indentation level by one unit. Throws if already at
+   * base level.
    */
   shift: () => void
 
-  /**
-   * Adds a blank line (newline character) without any indentation.
-   */
+  /** Adds a blank line (newline character) without any indentation. */
   emptyLine: () => void
 
-  /**
-   * Retrieves the fully composed and formatted string.
-   */
+  /** Retrieves the fully composed and formatted string. */
   raw: () => string
 }
 
 /**
- * Creates a stateful formatter object using closures to manage indentation and output.
+ * Creates a stateful formatter object using closures to manage indentation and
+ * output.
  */
 export function createFormatter(indentUnit: string = '  '): Formatter {
   const output: string[] = []

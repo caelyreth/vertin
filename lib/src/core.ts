@@ -9,8 +9,15 @@
  * @license MPL-2.0
  */
 
-import type { App, Command, CtorDeriver, FnDeriver, Message, Result } from './types'
 import { INVALID_COMMAND, NO_COMMAND_SPECIFIED } from './errors'
+import type {
+  App,
+  Command,
+  CtorDeriver,
+  FnDeriver,
+  Message,
+  Result,
+} from './types'
 import { Err, Ok } from './utils'
 
 // MARK: - Constants &  Utilities
@@ -47,8 +54,7 @@ export function match(
       if (token && cmd.sub && token in cmd.sub) {
         cmd = cmd.sub[token]
         offset += 1
-      }
-      else {
+      } else {
         return Ok([cmd, offset])
       }
     }
@@ -73,31 +79,25 @@ function _resolve(
   value: string,
   r: FnDeriver | CtorDeriver = String,
 ): Result<any, string> {
-  if (r === String)
-    return Ok(value)
+  if (r === String) return Ok(value)
   if (r === Number) {
     const resolved = Number(value)
-    if (Number.isNaN(resolved))
-      return Err(`\`${value}\` is not a valid number`)
+    if (Number.isNaN(resolved)) return Err(`\`${value}\` is not a valid number`)
     return Ok(resolved)
   }
   if (r === Boolean) {
-    if (value === 'true' || value === '1')
-      return Ok(true)
-    if (value === 'false' || value === '0')
-      return Ok(false)
+    if (value === 'true' || value === '1') return Ok(true)
+    if (value === 'false' || value === '0') return Ok(false)
     return Err(`\`${value}\` is not a valid boolean value`)
   }
   if (typeof r === 'function') {
     try {
       const resolved = (r as FnDeriver)(value)
       return Ok(resolved)
-    }
-    catch (e: any) {
+    } catch (e: any) {
       if (e instanceof Error) {
         return Err(e.message)
-      }
-      else {
+      } else {
         return Err(`\`${value}\` is not resolvable`)
       }
     }

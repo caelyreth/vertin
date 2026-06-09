@@ -14,25 +14,21 @@ import type { Styler } from './tint'
 
 // MARK: - Collector
 
-/**
- * Severity level of a message in collector subsystem.
- */
+/** Severity level of a message in collector subsystem. */
 export type Severity = 'info' | 'warn' | 'error'
 
-/**
- * Diagnostics of a message in collector subsystem.
- */
+/** Diagnostics of a message in collector subsystem. */
 export interface Diagnostics {
-  /**
-   * Source of the diagnostics.
-   */
+  /** Source of the diagnostics. */
   readonly source: Plural<string>
 
   /**
    * Offset of the diagnostics.
    *
-   * - If the source is an array, the offset is the index of the source in the array.
-   * - If the source is a string, the offset is the index of the character in the string.
+   * - If the source is an array, the offset is the index of the source in the
+   *   array.
+   * - If the source is a string, the offset is the index of the character in the
+   *   string.
    */
   readonly offset: number
 
@@ -43,40 +39,26 @@ export interface Diagnostics {
    */
   readonly markup: string
 
-  /**
-   * Expected values of the diagnostics.
-   */
+  /** Expected values of the diagnostics. */
   readonly expected?: Plural<string>
 
-  /**
-   * Hint of the diagnostics.
-   */
+  /** Hint of the diagnostics. */
   readonly hint?: Plural<string>
 }
 
-/**
- * Message of a message in collector subsystem.
- */
+/** Message of a message in collector subsystem. */
 export interface Message {
-  /**
-   * Severity level of the message.
-   */
+  /** Severity level of the message. */
   readonly level: Severity
 
-  /**
-   * Description of the message.
-   */
+  /** Description of the message. */
   readonly desc: string
 
-  /**
-   * Diagnostics of the message.
-   */
+  /** Diagnostics of the message. */
   readonly diag?: Diagnostics
 }
 
-/**
- * Collector interface.
- */
+/** Collector interface. */
 export interface Collector {
   /**
    * Log a message or messages to the collector.
@@ -92,49 +74,47 @@ export interface Collector {
    */
   submit: (msgs: Plural<Message>, brief?: boolean) => void
 
-  /**
-   * Collect and display all queued messages.
-   */
+  /** Collect and display all queued messages. */
   collect: (brief?: boolean) => void
 }
 
 // MARK: - Deriver
 
 /**
- * A __function__ that derives a dedicated type from raw value string
+ * A **function** that derives a dedicated type from raw value string
  *
- * You can use a custom function to parse a string into a _dedicated type_,
- * e.g. parsing from raw encoded input string to a decoded type,
- * so that we could utilize all _built-in features_ of Vertin with that type.
+ * You can use a custom function to parse a string into a _dedicated type_, e.g.
+ * parsing from raw encoded input string to a decoded type, so that we could
+ * utilize all _built-in features_ of Vertin with that type.
  */
 export type FnDeriver<R = any> = (raw: string) => R
 
 /**
- * Language's built-in constructor to derive their corresponding primitive
- * type from raw value string
+ * Language's built-in constructor to derive their corresponding primitive type
+ * from raw value string
  *
- * Vertin only support a subset of language's built-in constructor.
- * You can use {@link FnDeriver} to support other types in construction.
+ * Vertin only support a subset of language's built-in constructor. You can use
+ * {@link FnDeriver} to support other types in construction.
  *
  * @example
- * `String`, `Number`, `Boolean`
+ *   ;(`String`, `Number`, `Boolean`)
  */
-export type CtorDeriver
-  = | StringConstructor
-    | NumberConstructor
-    | BooleanConstructor
+export type CtorDeriver =
+  | StringConstructor
+  | NumberConstructor
+  | BooleanConstructor
 
 /**
- * A deriver is a __standard function__ or part of a language's built-in
- * __constructors__ used to derive a concrete type from raw value string.
+ * A deriver is a **standard function** or part of a language's built-in
+ * **constructors** used to derive a concrete type from raw value string.
  *
- * A {@link Deriver} is used for value __construction__, affecting the type of
- * value you could used from {@link HandlerContext}. Due to the same reason,
- * it is lack in displaying detailed messages in error messages and generating
- * good shell completion _(e.g. completion for a file extension, etc.)_
+ * A {@link Deriver} is used for value **construction**, affecting the type of
+ * value you could used from {@link HandlerContext}. Due to the same reason, it
+ * is lack in displaying detailed messages in error messages and generating good
+ * shell completion _(e.g. completion for a file extension, etc.)_
  *
- * If you want to make a better UX for your end user, consider using
- * `validate` API in the parameter specification to make better messages.
+ * If you want to make a better UX for your end user, consider using `validate`
+ * API in the parameter specification to make better messages.
  *
  * In contrast, `derive` API in that specification is mainly for better DX.
  */
@@ -146,12 +126,15 @@ export type Deriver = FnDeriver | CtorDeriver | FnDeriver[] | CtorDeriver[]
  * @private
  * @template T The deriver unit type to extract
  */
-type _DeriveUnit<T>
-  = T extends StringConstructor ? string
-    : T extends NumberConstructor ? number
-      : T extends BooleanConstructor ? boolean
-        : T extends FnDeriver ? ReturnType<T>
-          : never
+type _DeriveUnit<T> = T extends StringConstructor
+  ? string
+  : T extends NumberConstructor
+    ? number
+    : T extends BooleanConstructor
+      ? boolean
+      : T extends FnDeriver
+        ? ReturnType<T>
+        : never
 
 /**
  * Utility type to extract the dervied type from any {@link Deriver}.
@@ -159,35 +142,30 @@ type _DeriveUnit<T>
  * @private
  * @template T Any kind of {@link Deriver} type to extract
  */
-export type _Derive<T extends Deriver>
-  = T extends readonly (infer U)[] ? _DeriveUnit<U>[]
-    : T extends (infer U)[] ? _DeriveUnit<U>[]
-      : _DeriveUnit<T>
+export type _Derive<T extends Deriver> = T extends readonly (infer U)[]
+  ? _DeriveUnit<U>[]
+  : T extends (infer U)[]
+    ? _DeriveUnit<U>[]
+    : _DeriveUnit<T>
 
 // MARK: - Validator
 
-/**
- * Working context of a validator
- */
+/** Working context of a validator */
 export interface ValidatorContext<T> {
-  /**
-   * Raw value of current field
-   */
+  /** Raw value of current field */
   readonly value: T
 
-  /**
-   * Collector subsystem context
-   */
+  /** Collector subsystem context */
   readonly collector: Collector
 }
 
 /**
  * Validate function to check if a value is valid
  *
- * A validator is used to __audit__ a value in runtime, affecting the UX
- * of end users in many aspects; it could be used to reduce boilerplate
- * runtime checking, producing comprehensive error messaging with Vertin's
- * un-throwable APIs and generating well shell completions.
+ * A validator is used to **audit** a value in runtime, affecting the UX of end
+ * users in many aspects; it could be used to reduce boilerplate runtime
+ * checking, producing comprehensive error messaging with Vertin's un-throwable
+ * APIs and generating well shell completions.
  */
 // TODO: return something to build shell completions.
 export type Validator<T> = (ctx: ValidatorContext<T>) => void
@@ -209,19 +187,13 @@ interface _BaseParameter<T extends Deriver = Deriver> {
    */
   readonly resolver?: T
 
-  /**
-   * Brief description of parameter.
-   */
+  /** Brief description of parameter. */
   readonly desc?: string
 
-  /**
-   * Fallback value if parameter field omitted.
-   */
+  /** Fallback value if parameter field omitted. */
   readonly fallback?: _Derive<T>
 
-  /**
-   * Constraint function to check if the parameter is valid.
-   */
+  /** Constraint function to check if the parameter is valid. */
   readonly constr?: Validator<_Derive<T>>
 }
 
@@ -230,7 +202,9 @@ interface _BaseParameter<T extends Deriver = Deriver> {
  *
  * @template T {@link Deriver} used to parse the raw string value.
  */
-export interface Argument<T extends Deriver = Deriver> extends _BaseParameter<T> {
+export interface Argument<
+  T extends Deriver = Deriver,
+> extends _BaseParameter<T> {
   /**
    * Whether the argument field is optional.
    *
@@ -255,49 +229,37 @@ export interface Flag<T extends Deriver = Deriver> extends _BaseParameter<T> {
   /**
    * Alias for the flag field.
    *
-   * A single character string will become a single dash prefixed flag,
-   * while a multi-character string will become a double dash prefixed flag.
+   * A single character string will become a single dash prefixed flag, while a
+   * multi-character string will become a double dash prefixed flag.
    */
   readonly alias?: Plural<string>
 }
 
-/**
- * Record type for argument and argument specifications.
- */
+/** Record type for argument and argument specifications. */
 export type ArgumentRecord = Record<string, Argument>
 
-/**
- * Record type for argument and flag specifications.
- */
+/** Record type for argument and flag specifications. */
 export type FlagRecord = Record<string, Flag>
 
-/**
- * Section style flag specification.
- */
+/** Section style flag specification. */
 export interface FlagSection<T extends FlagRecord = FlagRecord> {
-  /**
-   * Brief description of the flag section.
-   */
+  /** Brief description of the flag section. */
   readonly desc?: string
 
-  /**
-   * Tint color of the flag section.
-   */
+  /** Tint color of the flag section. */
   readonly styler?: Styler
 
   // TODO!: add more features to section grouping
 
-  /**
-   * Flags in the flag section.
-   */
+  /** Flags in the flag section. */
   readonly flags: (keyof T)[]
 }
 
 // MARK: - Parsed Parameter
 
 /**
- * Utility type to extract resolver type from an parameter specification.
- * It's used to implement the default string resolver inference.
+ * Utility type to extract resolver type from an parameter specification. It's
+ * used to implement the default string resolver inference.
  *
  * @private
  */
@@ -325,103 +287,80 @@ export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
  * @private
  */
 export type _FlagSectionsMap<S extends FlagSection[], F extends FlagRecord> = {
-  [K in keyof S]: S[K] extends FlagSection
-    ? FlagSection<F>
-    : never
+  [K in keyof S]: S[K] extends FlagSection ? FlagSection<F> : never
 }
 
-/**
- * Utility type to parse argument record to a parsed argument record.
- */
-type _ParsedArgument<
-  T extends ArgumentRecord,
-> = {
+/** Utility type to parse argument record to a parsed argument record. */
+type _ParsedArgument<T extends ArgumentRecord> = {
   [K in keyof T]: T[K]['fallback'] extends _Derive<_GetResolver<T[K]>>
     ? _Derive<_GetResolver<T[K]>>
-    : T[K]['optional'] extends true ? _Derive<_GetResolver<T[K]>> | undefined
+    : T[K]['optional'] extends true
+      ? _Derive<_GetResolver<T[K]>> | undefined
       : _Derive<_GetResolver<T[K]>>
 }
 
-/**
- * Utility type to parse flag record to a parsed flag record.
- */
-type _ParsedFlagRecord<
-  T extends FlagRecord,
-> = {
+/** Utility type to parse flag record to a parsed flag record. */
+type _ParsedFlagRecord<T extends FlagRecord> = {
   [K in keyof T]: T[K]['fallback'] extends _Derive<_GetResolver<T[K]>>
     ? _Derive<_GetResolver<T[K]>>
-    : T[K]['required'] extends true ? _Derive<_GetResolver<T[K]>>
+    : T[K]['required'] extends true
+      ? _Derive<_GetResolver<T[K]>>
       : _Derive<_GetResolver<T[K]>> | undefined
 }
 
 /**
- * Utility type to parse argument and flag record to a parsed argument and flag record.
+ * Utility type to parse argument and flag record to a parsed argument and flag
+ * record.
  */
 export interface _Parsed<
   A extends ArgumentRecord = ArgumentRecord,
   F extends FlagRecord = FlagRecord,
   P extends Snippet[] = Snippet[],
 > {
-  /**
-   * Parsed arguments.
-   */
-  readonly args: _ParsedArgument<NonNullable<A>>
-    & MergeObjects<{
+  /** Parsed arguments. */
+  readonly args: _ParsedArgument<NonNullable<A>> &
+    MergeObjects<{
       [K in keyof P]: _ParsedArgument<NonNullable<P[K]['args']>>
     }>
 
-  /**
-   * Parsed flags.
-   */
-  readonly flags: _ParsedFlagRecord<NonNullable<F>>
-    & MergeObjects<{
+  /** Parsed flags. */
+  readonly flags: _ParsedFlagRecord<NonNullable<F>> &
+    MergeObjects<{
       [K in keyof P]: _ParsedFlagRecord<NonNullable<P[K]['flags']>>
     }>
 
-  /**
-   * Unknown arguments.
-   */
+  /** Unknown arguments. */
   readonly unkArgs?: string[]
 
-  /**
-   * Unknown flags.
-   */
+  /** Unknown flags. */
   readonly unkFlags?: (string | boolean)[]
 }
 
 // MARK: - Snippet
 
-/**
- *
- */
 export interface Snippet<
   A extends ArgumentRecord = ArgumentRecord,
   F extends FlagRecord = FlagRecord,
   S extends FlagSection[] = FlagSection[],
 > {
-  /**
-   * Arguments in the snippet.
-   */
+  /** Arguments in the snippet. */
   readonly args?: A
 
-  /**
-   * Flags in the snippet.
-   */
+  /** Flags in the snippet. */
   readonly flags?: F
 
-  /**
-   * Sections of flags in the snippet.
-   */
+  /** Sections of flags in the snippet. */
   readonly sections?: S
 }
 
-/**
- * @private
- */
+/** @private */
 export type _SnippetMap<T extends Snippet> = Snippet & {
   flags?: FlagRecord & _ParameterMap<NonNullable<T['flags']>>
   args?: ArgumentRecord & _ParameterMap<NonNullable<T['args']>>
-  sections?: _FlagSectionsMap<NonNullable<T['sections']>, NonNullable<T['flags']>>
+  sections?: _FlagSectionsMap<
+    NonNullable<T['sections']>,
+    NonNullable<T['flags']>
+  >
 }
 
 // MARK: - Command
@@ -431,15 +370,13 @@ export type HandlerContext<
   F extends FlagRecord,
   P extends Snippet[],
 > = _Parsed<A, F, P> & {
-  /**
-   * Collector subsystem context.
-   */
+  /** Collector subsystem context. */
   readonly collector: Collector
 
   /**
    * Internal context for the command.
    *
-   * NOTE: Those APIs may be __changed without any notice__.
+   * NOTE: Those APIs may be **changed without any notice**.
    *
    * @private
    */
@@ -453,14 +390,10 @@ export type HandlerContext<
   }
 }
 
-/**
- * Record type for argument and command specifications.
- */
+/** Record type for argument and command specifications. */
 export type CommandRecord = Record<string, Command>
 
-/**
- * Command specification.
- */
+/** Command specification. */
 export interface Command<
   A extends ArgumentRecord = ArgumentRecord,
   F extends FlagRecord = FlagRecord,
@@ -469,68 +402,45 @@ export interface Command<
   G extends CommandCategory[] = CommandCategory[],
   P extends Snippet[] = Snippet[],
 > {
-  /**
-   * Brief description of command.
-   */
+  /** Brief description of command. */
   readonly desc?: string
 
-  /**
-   * Arguments of the command.
-   */
+  /** Arguments of the command. */
   readonly args?: A
 
-  /**
-   * Flags of the command.
-   */
+  /** Flags of the command. */
   readonly flags?: F
 
-  /**
-   * Sections of flags in the command.
-   */
+  /** Sections of flags in the command. */
   readonly sections?: S
 
-  /**
-   * Sub-commands of the command.
-   */
+  /** Sub-commands of the command. */
   readonly sub?: C
 
-  /**
-   * Command category grouping.
-   */
+  /** Command category grouping. */
   readonly categories?: G
 
-  /**
-   * Snippets used in the command.
-   */
+  /** Snippets used in the command. */
   readonly use?: P
 
   /**
    * Handler function of the command.
    *
-   * @todo complete handler system, currently it's just a placeholder.
+   * @todo Complete handler system, currently it's just a placeholder.
    */
   readonly handler: (ctx: HandlerContext<A, F, P>) => void
 }
 
-/**
- *
- */
 export interface CommandCategory<T extends CommandRecord = CommandRecord> {
-  /**
-   * Brief description of the command category.
-   */
+  /** Brief description of the command category. */
   readonly desc?: string
 
-  /**
-   * Tint color of the command category.
-   */
+  /** Tint color of the command category. */
   readonly styler?: Styler
 
   // TODO!: add more features to category grouping
 
-  /**
-   * Flags in the command category.
-   */
+  /** Flags in the command category. */
   readonly cmds: (keyof T)[]
 }
 
@@ -539,10 +449,11 @@ export interface CommandCategory<T extends CommandRecord = CommandRecord> {
  *
  * @private
  */
-export type _CommandCategoriesMap<S extends CommandCategory[], C extends CommandRecord> = {
-  [K in keyof S]: S[K] extends CommandCategory
-    ? CommandCategory<C>
-    : never
+export type _CommandCategoriesMap<
+  S extends CommandCategory[],
+  C extends CommandRecord,
+> = {
+  [K in keyof S]: S[K] extends CommandCategory ? CommandCategory<C> : never
 }
 
 // MARK: - App
@@ -550,45 +461,31 @@ export type _CommandCategoriesMap<S extends CommandCategory[], C extends Command
 /**
  * Vertin framework configuration.
  *
- * @todo complete configuration system, currently it's just a placeholder.
+ * @todo Complete configuration system, currently it's just a placeholder.
  */
 export interface AppConfig {}
 
-/**
- * Application specification.
- */
+/** Application specification. */
 export interface App<
   C extends CommandRecord = CommandRecord,
   G extends CommandCategory[] = CommandCategory[],
 > {
-  /**
-   * Brief description of the app.
-   */
+  /** Brief description of the app. */
   readonly desc?: string
 
-  /**
-   * Version of the app.
-   */
+  /** Version of the app. */
   readonly ver?: string
 
-  /**
-   * Main command of the app.
-   */
+  /** Main command of the app. */
   readonly main?: Command
 
-  /**
-   * Sub-commands of the app.
-   */
+  /** Sub-commands of the app. */
   readonly sub?: C
 
-  /**
-   * Command category grouping.
-   */
+  /** Command category grouping. */
   readonly categories?: G
 
-  /**
-   * Vertin framework configuration.
-   */
+  /** Vertin framework configuration. */
   readonly config?: AppConfig
 }
 
@@ -606,6 +503,7 @@ export interface Success<T> {
 
 /**
  * Represents a failed operation.
+ *
  * @template E The type of the error value.
  */
 export interface Failure<E> {
@@ -615,27 +513,24 @@ export interface Failure<E> {
 
 /**
  * A union type that can be either Success<T> or Failure<E>.
+ *
  * @template T The type of the successful value.
  * @template E The type of the error value.
  */
 export type Result<T, E = string[]> = Success<T> | Failure<E>
 
-/**
- * Utility type to make a type to include itself and its array form.
- */
+/** Utility type to make a type to include itself and its array form. */
 export type Plural<T> = T | T[]
 
-/**
- * Utility type to convert a union type to an intersection type.
- */
-export type UnionToIntersection<U>
-  = (U extends any ? (x: U) => void : never) extends
-  (x: infer I) => void ? I : never
+/** Utility type to convert a union type to an intersection type. */
+export type UnionToIntersection<U> = (
+  U extends any ? (x: U) => void : never
+) extends (x: infer I) => void
+  ? I
+  : never
 
-/**
- * Utility type to merge multiple objects into a single object.
- */
-export type MergeObjects<T extends readonly object[]>
-  = UnionToIntersection<T[number]> extends infer O
+/** Utility type to merge multiple objects into a single object. */
+export type MergeObjects<T extends readonly object[]> =
+  UnionToIntersection<T[number]> extends infer O
     ? { [K in keyof O]: O[K] }
     : never

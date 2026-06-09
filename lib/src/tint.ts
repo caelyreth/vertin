@@ -58,9 +58,7 @@ const STYLE = {
 
 // MARK: - Types
 
-/**
- * Styler is used to style text with ANSI escape codes.
- */
+/** Styler is used to style text with ANSI escape codes. */
 export interface Styler {
   (text: string): string
   (strings: TemplateStringsArray, ...values: any[]): string
@@ -111,10 +109,8 @@ interface StylerInternal extends Styler {
 function isColorSupported(): boolean {
   if (typeof process !== 'undefined') {
     const { env, stdout } = process
-    if (env.NO_COLOR || env.NODE_DISABLE_COLORS)
-      return false
-    if (env.FORCE_COLOR)
-      return true
+    if (env.NO_COLOR || env.NODE_DISABLE_COLORS) return false
+    if (env.FORCE_COLOR) return true
     return Boolean(stdout && stdout.isTTY)
   }
   return false // Fallback for non-node envs
@@ -124,7 +120,7 @@ const ENABLED = isColorSupported()
 
 // MARK: - Once Setup
 
-const styles: Record<string, { open: string, close: string }> = {}
+const styles: Record<string, { open: string; close: string }> = {}
 
 function add(name: string, open: number, close: number) {
   styles[name] = {
@@ -152,20 +148,26 @@ const proto = {}
 const escapeRegex = (s: string) => s.replace(/\[/g, '\\[')
 
 // Factory
-function createStyler(open: string, close: string, regex: RegExp | null, replacements: Record<string, string>): Styler {
-  const fn = function (strings: TemplateStringsArray | string, ...values: any[]) {
+function createStyler(
+  open: string,
+  close: string,
+  regex: RegExp | null,
+  replacements: Record<string, string>,
+): Styler {
+  const fn = function (
+    strings: TemplateStringsArray | string,
+    ...values: any[]
+  ) {
     let text: string
     if (typeof strings === 'string' && values.length === 0) {
       text = strings
-    }
-    else if (Array.isArray(strings) && (strings as any).raw) {
+    } else if (Array.isArray(strings) && (strings as any).raw) {
       text = strings[0]
       const len = values.length
       for (let i = 0; i < len; i++) {
         text += values[i] + strings[i + 1]
       }
-    }
-    else {
+    } else {
       text = String(strings)
     }
 
@@ -175,7 +177,7 @@ function createStyler(open: string, close: string, regex: RegExp | null, replace
 
     if (regex && regex.test(text)) {
       regex.lastIndex = 0
-      text = text.replace(regex, match => replacements[match] || match)
+      text = text.replace(regex, (match) => replacements[match] || match)
     }
 
     return open + text + close
@@ -241,6 +243,7 @@ const RE_ANSI = /\x1B\[\d+m/g
 
 /**
  * Strip ANSI escape codes from a string
+ *
  * @param str - The string to strip ANSI escape codes from
  * @returns The string with ANSI escape codes removed
  */
@@ -250,6 +253,7 @@ export function strip(str: string): string {
 
 /**
  * Get the raw length of a string, ignoring ANSI escape codes
+ *
  * @param str - The string to get the raw length of
  * @returns The raw length of the string
  */

@@ -13,11 +13,12 @@
  * @license MPL-2.0
  */
 
-import type { Formatter } from './formatter'
-import type { Collector, Diagnostics, Message } from './types'
 import process from 'node:process'
+
+import type { Formatter } from './formatter'
 import { createFormatter } from './formatter'
 import { blue, cyan, magenta, normal, red, yellow } from './tint'
+import type { Collector, Diagnostics, Message } from './types'
 
 // MARK: - Internal Types
 
@@ -39,8 +40,7 @@ function displayGroup(heading: string, raw: string | string[], fmt: Formatter) {
       fmt.line(`- ${el}`)
     }
     fmt.shift()
-  }
-  else {
+  } else {
     heading += raw
     fmt.line(heading)
   }
@@ -60,19 +60,16 @@ function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
       const elem = diag.source[i]
       if (i === diag.offset) {
         markupLine += '^'.repeat(elem.length)
-      }
-      else if (i <= diag.offset) {
+      } else if (i <= diag.offset) {
         markupLine += ' '.repeat(elem.length)
-      }
-      else {
+      } else {
         break
       }
       if (i < diag.source.length - 1 || i === diag.offset) {
         markupLine += ' '
       }
     }
-  }
-  else {
+  } else {
     sourceLine += diag.source
     markupLine += ' '.repeat(diag.offset)
     let endPos = diag.offset
@@ -123,9 +120,7 @@ function display(msg: Message, brief: boolean = false) {
 
 // MARK: - Collector
 
-/**
- * Creates a new message collector with empty queue.
- */
+/** Creates a new message collector with empty queue. */
 export function createCollector(): Collector {
   const queue: QueuedMessage[] = []
 

@@ -4,10 +4,7 @@ export default defineConfig({
   workspace: {
     include: ['lib'],
   },
-  entry: [
-    'src/index.ts',
-    'src/tint.ts',
-  ],
+  entry: ['src/index.ts'],
   dts: {
     oxc: true,
   },

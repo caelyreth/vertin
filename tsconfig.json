@@ -1,26 +1,17 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "lib": ["esnext"],
     "module": "esnext",
+    "lib": ["esnext"],
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
     "strict": true,
-    "noImplicitAny": true,
-    "noUnusedLocals": true,
-    "declaration": true,
-    "emitDeclarationOnly": true,
+    "allowJs": false,
+    "checkJs": false,
+    "skipLibCheck": true,
     "noEmit": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true
+    "types": ["node"]
   },
-  "include": [
-    "lib/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["lib/**/src"]
 }
