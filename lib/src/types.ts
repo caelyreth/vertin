@@ -9,7 +9,7 @@
  * @license MIT
  */
 
-// MARK: - Internal Diagnostics
+// MARK: - internal diagnostics
 
 /** Severity level of an internal runtime message. */
 export type _Severity = 'info' | 'warn' | 'error'
@@ -81,7 +81,7 @@ export interface _Collector {
   has_errors: () => boolean
 }
 
-// MARK: - Resolver
+// MARK: - resolver
 
 /**
  * A function that derives a dedicated type from a raw value string.
@@ -145,7 +145,7 @@ export type _Resolve<T extends Resolver> = T extends readonly (infer U)[]
     ? _ResolveUnit<U>[]
     : _ResolveUnit<T>
 
-// MARK: - Check
+// MARK: - checking
 
 /** Working context of a check function. */
 export interface CheckContext<T> {
@@ -164,7 +164,7 @@ export type Check<T> = {
   bivariance(ctx: CheckContext<T>): _CheckResult | Promise<_CheckResult>
 }['bivariance']
 
-// MARK: - Parameter
+// MARK: - parameter
 
 /**
  * Base parameter specification.
@@ -222,7 +222,7 @@ export type _Args = Record<string, Argument>
 /** Record type for flag specifications. */
 export type _Flags = Record<string, Flag>
 
-// MARK: - Parsed Parameter
+// MARK: - parsed parameter
 
 /**
  * Utility type to extract resolver type from a parameter specification. It's
@@ -303,7 +303,7 @@ export interface _Parsed<
   readonly unkFlags?: (string | boolean)[]
 }
 
-// MARK: - Snippet
+// MARK: - snippet
 
 export interface Snippet<A extends _Args = _Args, F extends _Flags = _Flags> {
   /** Arguments in the snippet. */
@@ -319,7 +319,7 @@ export type _SnippetMap<T extends Snippet> = Snippet & {
   args?: _Args & _ParamMap<NonNullable<T['args']>>
 }
 
-// MARK: - Command
+// MARK: - command
 
 export type HandlerContext<
   A extends _Args,
@@ -379,7 +379,7 @@ export interface Command<
   readonly handler: _Handler<A, F, P>
 }
 
-// MARK: - App
+// MARK: - app
 
 /** Vertin framework configuration. */
 export interface AppConfig {}
@@ -408,7 +408,7 @@ export interface RunnableApp<C extends _Commands = _Commands> extends App<C> {
   readonly run: () => Promise<void>
 }
 
-// MARK: - Utilities
+// MARK: - utils
 
 /**
  * Represents a successful operation.

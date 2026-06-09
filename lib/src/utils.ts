@@ -8,7 +8,7 @@
  * @license MIT
  */
 
-import type { _Err, _Ok, _Result } from './types'
+import type { _Err, _Many, _Ok, _Result } from './types'
 
 // MARK: - Result
 
@@ -103,4 +103,10 @@ export function unwrap_or<T, E>(result: _Result<T, E>, fallback: T): T {
     return result.value
   }
   return fallback
+}
+
+// MARK: - conversion
+
+export function to_array<T>(value: _Many<T>): T[] {
+  return Array.isArray(value) ? value : [value]
 }

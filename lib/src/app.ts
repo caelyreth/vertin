@@ -15,7 +15,7 @@ import { create_context } from './runtime'
 import type { _Message, App } from './types'
 import { is_err } from './utils'
 
-// MARK: - Utilities
+// MARK: - utils
 
 function trim_argv(argv: readonly string[]): string[] {
   const trimmedStart = argv.slice(0, 2).map((p) => path.basename(p))
@@ -23,19 +23,7 @@ function trim_argv(argv: readonly string[]): string[] {
   return [...trimmedStart, ...remainingArgs]
 }
 
-// MARK: - Run An App
-
-function handler_failed(reason: unknown): _Message {
-  return {
-    level: 'error',
-    desc: 'Handler failed',
-    diag: {
-      source: reason instanceof Error ? reason.message : String(reason),
-      offset: 0,
-      markup: 'handler failed during execution',
-    },
-  }
-}
+// MARK: - app runner
 
 /** Runs a Vertin application against the current process arguments. */
 export async function run(spec: App): Promise<void> {
@@ -64,5 +52,19 @@ export async function run(spec: App): Promise<void> {
     collector.log(handler_failed(reason))
     process.exitCode = 1
     return
+  }
+}
+
+// MARK: - helpers
+
+function handler_failed(reason: unknown): _Message {
+  return {
+    level: 'error',
+    desc: 'Handler failed',
+    diag: {
+      source: reason instanceof Error ? reason.message : String(reason),
+      offset: 0,
+      markup: 'handler failed during execution',
+    },
   }
 }

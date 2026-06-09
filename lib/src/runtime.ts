@@ -23,7 +23,7 @@ import type {
   Snippet,
 } from './types'
 
-// MARK: - Internal Types
+// MARK: - types
 
 interface _RawValue {
   readonly value: string
@@ -47,7 +47,7 @@ type _RuntimeContext = HandlerContext<_Args, _Flags, Snippet[]>
 type _ResolverUnit = _ResolverFn | _ResolverCtor
 type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
 
-// MARK: - Diagnostics
+// MARK: - diagnostics
 
 function error(desc: string, diag?: _Message['diag']): _Message {
   return {
@@ -71,7 +71,7 @@ function token_error(
   })
 }
 
-// MARK: - Utilities
+// MARK: - utils
 
 function is_flag_token(token: string | undefined): token is string {
   return token?.startsWith('-') === true && token !== '-'
@@ -147,7 +147,7 @@ function resolve_value(
   return resolve_unit(raw[raw.length - 1]!.value, resolver_unit(resolver))
 }
 
-// MARK: - Snippets
+// MARK: - snippets
 
 function merge_params(cmd: _Commands[string]): _Params {
   const args: _Args = {}
@@ -164,7 +164,7 @@ function merge_params(cmd: _Commands[string]): _Params {
   return { args, flags }
 }
 
-// MARK: - Flag Parsing
+// MARK: - flag parsing
 
 function flag_tokens(flags: _Flags): ReadonlyMap<string, string> {
   const map = new Map<string, string>()
@@ -263,7 +263,7 @@ function parse_argv(
   return parsed
 }
 
-// MARK: - Parameter Parsing
+// MARK: - parameter parsing
 
 function parse_arg_values(
   argv: readonly string[],
@@ -383,7 +383,7 @@ function parse_flag_values(
   return parsed
 }
 
-// MARK: - Checks
+// MARK: - checking
 
 async function run_checks(
   specs: _Args | _Flags,
@@ -421,7 +421,7 @@ function check_markup(key: string, reason: unknown): string {
   return `\`${key}\` did not pass its check`
 }
 
-// MARK: - Context
+// MARK: - context
 
 export async function create_context(
   app: App,

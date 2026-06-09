@@ -12,7 +12,7 @@ import { invalid_command, no_command_specified } from './errors'
 import type { _Commands, _Message, _Result, App } from './types'
 import { err, ok } from './utils'
 
-// MARK: - Constants & Utilities
+// MARK: - utils
 
 const SINGLE_DASH = '-'
 
@@ -28,7 +28,7 @@ function get_own<T>(
   return record[key]
 }
 
-// MARK: - Command Matching
+// MARK: - matching
 
 /** Resolves the command selected by the provided argv tokens. */
 export function match(

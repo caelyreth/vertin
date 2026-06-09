@@ -12,7 +12,7 @@
 
 import type { _Message } from './types'
 
-// MARK: - Matching Stage
+// MARK: - matching stage
 
 export const no_command_specified = {
   level: 'warn',

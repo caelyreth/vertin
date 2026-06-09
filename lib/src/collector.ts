@@ -15,19 +15,16 @@ import type { _Formatter } from './formatter'
 import { create_formatter } from './formatter'
 import { blue, cyan, magenta, normal, raw_len, red, yellow } from './tint'
 import type { _Collector, _Diagnostics, _Many, _Message } from './types'
+import { to_array } from './utils'
 
-// MARK: - Internal Types
+// MARK: - types
 
 interface _QueuedMessage {
   readonly msg: _Message
   logged: boolean
 }
 
-function to_array<T>(value: _Many<T>): T[] {
-  return Array.isArray(value) ? value : [value]
-}
-
-// MARK: - Display Functions
+// MARK: - display
 
 function display_group(heading: string, raw: _Many<string>, fmt: _Formatter) {
   fmt.indent()
@@ -117,7 +114,7 @@ function display(msg: _Message, brief: boolean = false) {
   process.stderr.write(fmt.raw())
 }
 
-// MARK: - Collector
+// MARK: - collector
 
 /** Creates a new message collector with empty queue. */
 export function create_collector(): _Collector {

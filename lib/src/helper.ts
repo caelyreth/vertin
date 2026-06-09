@@ -23,14 +23,10 @@ import type {
   Snippet,
 } from './types'
 
-// MARK: - Subsystem
-
 /** Helper function to create a check. */
 export function check<T>(fn: Check<T>): Check<T> {
   return fn
 }
-
-// MARK: - Parameter
 
 /** Helper function to create a record of argument parameters. */
 export function args<const T extends _Args & _ParamMap<T>>(record: T): T {
@@ -42,16 +38,12 @@ export function flags<const T extends _Flags & _ParamMap<T>>(record: T): T {
   return record
 }
 
-// MARK: - Snippet
-
 /** Helper function to create a reusable parameter specification. */
 export function snippet<const T extends Snippet & _SnippetMap<T>>(
   records: T,
 ): T {
   return records
 }
-
-// MARK: - Command
 
 /** Helper function to create a command. */
 export function cmd<
@@ -73,8 +65,6 @@ export function cmd<
     handler,
   }
 }
-
-// MARK: - App
 
 /** Helper function to create an application. */
 export function app<const C extends _Commands>(

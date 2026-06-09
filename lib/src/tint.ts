@@ -17,7 +17,7 @@
 
 import process from 'node:process'
 
-// MARK: - Constants
+// MARK: - constants
 const ESC = '\x1B['
 
 const FG = {
@@ -56,7 +56,7 @@ const STYLE = {
   reset: [0, 0],
 } as const
 
-// MARK: - Types
+// MARK: - types
 
 /** Styler is used to style text with ANSI escape codes. */
 export interface Styler {
@@ -103,7 +103,7 @@ interface _Styler extends Styler {
   _replacements: Record<string, string>
 }
 
-// MARK: - Env Detection
+// MARK: - env detection
 
 function is_color_supported(): boolean {
   const { env, stdout } = process
@@ -114,7 +114,7 @@ function is_color_supported(): boolean {
 
 const ENABLED = is_color_supported()
 
-// MARK: - Once Setup
+// MARK: - once setup
 
 const styles: Record<string, { open: string; close: string }> = {}
 
@@ -137,7 +137,7 @@ for (const [name, [open, close]] of Object.entries(STYLE)) {
   add(name, open, close)
 }
 
-// MARK: - Styler
+// MARK: - styler
 
 const proto = {}
 
@@ -149,7 +149,7 @@ function is_template_strings_array(
   return Array.isArray(value) && 'raw' in value
 }
 
-// Factory
+// factory
 function create_styler(
   open: string,
   close: string,
@@ -233,7 +233,7 @@ for (const [name, { open, close }] of Object.entries(styles)) {
   })
 }
 
-// MARK: - Utilities
+// MARK: - utils
 
 // eslint-disable-next-line no-control-regex
 const RE_ANSI = /\x1B\[\d+m/g
@@ -258,7 +258,7 @@ export function raw_len(str: string): number {
   return strip(str).length
 }
 
-// MARK: - Exports
+// MARK: - exports
 
 export const black: Styler = base.black
 export const red: Styler = base.red
