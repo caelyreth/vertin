@@ -126,6 +126,37 @@ describe('public app runner', () => {
     expect(stderr.text()).toContain('Check failed')
   })
 
+  it('honors parser tweaks from public app config', async () => {
+    let handled = false
+    const serve = cmd(
+      {
+        flags: flags({
+          cache: { resolver: Boolean, fallback: true },
+        }),
+      },
+      () => {
+        handled = true
+      },
+    )
+
+    process.argv = ['node', 'web', 'serve', '--no-cache']
+
+    await app(
+      {
+        sub: { serve },
+      },
+      {
+        tweaks: {
+          booleanNegation: false,
+        },
+      },
+    ).run()
+
+    expect(handled).toBe(false)
+    expect(process.exitCode).toBe(1)
+    expect(stderr.text()).toContain('Unknown flag occurred')
+  })
+
   it('reports command matching and handler failures through internal diagnostics', async () => {
     process.argv = ['node', 'craft', 'missing']
 

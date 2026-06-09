@@ -381,8 +381,30 @@ export interface Command<
 
 // MARK: - app
 
+/** Low-level parser behavior toggles for uncommon CLI compatibility choices. */
+export interface AppTweaks {
+  /**
+   * Parse `--no-name` as `--name=false` for Boolean flags.
+   *
+   * @default
+   * `true`
+   */
+  readonly booleanNegation?: boolean
+
+  /**
+   * Treat negative numeric tokens as values for Number flags.
+   *
+   * @default
+   * `true`
+   */
+  readonly negativeNumberValues?: boolean
+}
+
 /** Vertin framework configuration. */
-export interface AppConfig {}
+export interface AppConfig {
+  /** Low-level parser behavior toggles. */
+  readonly tweaks?: AppTweaks
+}
 
 /** Application specification. */
 export interface App<C extends _Commands = _Commands> {

@@ -15,6 +15,7 @@ import type {
   _ResolverCtor,
   _ResolverFn,
   App,
+  AppConfig,
   Argument,
   Flag,
   HandlerContext,
@@ -46,6 +47,16 @@ interface _ParsedArgv {
 type _RuntimeContext = HandlerContext<_Args, _Flags, Snippet[]>
 type _ResolverUnit = _ResolverFn | _ResolverCtor
 type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
+
+interface _RuntimeTweaks {
+  readonly booleanNegation: boolean
+  readonly negativeNumberValues: boolean
+}
+
+const default_tweaks: _RuntimeTweaks = {
+  booleanNegation: true,
+  negativeNumberValues: true,
+}
 
 // MARK: - diagnostics
 
@@ -106,10 +117,24 @@ function is_boolean_resolver(resolver: Resolver | undefined): boolean {
 function can_read_as_value(
   token: string | undefined,
   resolver: Resolver | undefined,
+  tweaks: _RuntimeTweaks,
 ): token is string {
   if (token === undefined) return false
   if (!is_flag_token(token)) return true
+  if (!tweaks.negativeNumberValues) return false
   return resolver_unit(resolver) === Number && !Number.isNaN(Number(token))
+}
+
+function runtime_tweaks(config: AppConfig | undefined): _RuntimeTweaks {
+  const tweaks = config?.tweaks
+
+  if (!tweaks) return default_tweaks
+
+  return {
+    booleanNegation: tweaks.booleanNegation ?? default_tweaks.booleanNegation,
+    negativeNumberValues:
+      tweaks.negativeNumberValues ?? default_tweaks.negativeNumberValues,
+  }
 }
 
 function resolve_unit(
@@ -246,11 +271,27 @@ function split_flag(token: string): readonly [string, string | undefined] {
   return [token.slice(0, index), token.slice(index + 1)]
 }
 
+function negated_boolean_key(
+  name: string,
+  inline: string | undefined,
+  tokens: ReadonlyMap<string, string>,
+  flags: _Flags,
+  tweaks: _RuntimeTweaks,
+): string | undefined {
+  if (!tweaks.booleanNegation || inline !== undefined) return undefined
+  if (!name.startsWith('--no-')) return undefined
+
+  const key = tokens.get(`--${name.slice(5)}`)
+  if (!key || !is_boolean_resolver(flags[key]?.resolver)) return undefined
+  return key
+}
+
 function parse_argv(
   argv: readonly string[],
   offset: number,
   flags: _Flags,
   collector: _Collector,
+  tweaks: _RuntimeTweaks,
 ): _ParsedArgv {
   const parsed: _ParsedArgv = {
     args: [],
@@ -276,7 +317,13 @@ function parse_argv(
     }
 
     const [name, inline] = split_flag(token)
-    const key = tokens.get(name)
+    let key = tokens.get(name)
+    let negated = false
+
+    if (!key) {
+      key = negated_boolean_key(name, inline, tokens, flags, tweaks)
+      negated = key !== undefined
+    }
 
     if (!key) {
       parsed.unkFlags.push(token)
@@ -294,6 +341,11 @@ function parse_argv(
     const flag = flags[key]!
     const values = (parsed.flags[key] ??= [])
 
+    if (negated) {
+      values.push({ value: 'false', offset: i, token })
+      continue
+    }
+
     if (inline !== undefined) {
       values.push({ value: inline, offset: i, token })
       continue
@@ -305,7 +357,7 @@ function parse_argv(
     }
 
     const next = argv[i + 1]
-    if (!can_read_as_value(next, flag.resolver)) {
+    if (!can_read_as_value(next, flag.resolver, tweaks)) {
       collector.submit(
         token_error(
           'Missing flag value',
@@ -519,7 +571,8 @@ export async function create_context(
   collector: _Collector,
 ): Promise<_RuntimeContext> {
   const params = merge_params(cmd)
-  const parsed = parse_argv(argv, offset, params.flags, collector)
+  const tweaks = runtime_tweaks(app.config)
+  const parsed = parse_argv(argv, offset, params.flags, collector, tweaks)
   const args = parse_arg_values(
     argv,
     params.args,

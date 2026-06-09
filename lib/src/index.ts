@@ -12,6 +12,7 @@ export { app, args, check, cmd, flags, snippet } from './helper'
 export type {
   App,
   AppConfig,
+  AppTweaks,
   Argument,
   Check,
   CheckContext,

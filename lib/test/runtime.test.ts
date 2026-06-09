@@ -237,6 +237,102 @@ describe('runtime context construction', () => {
     expect(collector.has_errors()).toBe(false)
   })
 
+  it('supports boolean negation and rejects invalid negation forms', async () => {
+    const serve = cmd(
+      {
+        flags: flags({
+          cache: { resolver: Boolean, fallback: true },
+          output: { fallback: 'dist' },
+        }),
+      },
+      () => {},
+    )
+    const collector = quiet_collector()
+
+    const ctx = await create_context(
+      { sub: { serve } },
+      serve,
+      ['node', 'web', 'serve', '--no-cache'],
+      3,
+      collector,
+    )
+
+    expect(ctx.flags).toEqual({ cache: false, output: 'dist' })
+    expect(collector.has_errors()).toBe(false)
+
+    const memory = memory_collector()
+    const edgeCtx = await create_context(
+      { sub: { serve } },
+      serve,
+      ['node', 'web', 'serve', '--no-output', '--no-cache=true'],
+      3,
+      memory.collector,
+    )
+
+    expect(edgeCtx.flags).toEqual({ cache: true, output: 'dist' })
+    expect(edgeCtx.unkFlags).toEqual(['--no-output', '--no-cache=true'])
+    expect(memory.descriptions()).toEqual([
+      'Unknown flag occurred',
+      'Unknown flag occurred',
+    ])
+
+    const partialConfig = quiet_collector()
+    const partialCtx = await create_context(
+      {
+        config: {
+          tweaks: {
+            negativeNumberValues: false,
+          },
+        },
+        sub: { serve },
+      },
+      serve,
+      ['node', 'web', 'serve', '--no-cache'],
+      3,
+      partialConfig,
+    )
+
+    expect(partialCtx.flags).toEqual({ cache: false, output: 'dist' })
+    expect(partialConfig.has_errors()).toBe(false)
+  })
+
+  it('can disable boolean negation and negative number flag values through parser tweaks', async () => {
+    const serve = cmd(
+      {
+        flags: flags({
+          cache: { resolver: Boolean, fallback: true },
+          threshold: { resolver: Number },
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      {
+        config: {
+          tweaks: {
+            booleanNegation: false,
+            negativeNumberValues: false,
+          },
+        },
+        sub: { serve },
+      },
+      serve,
+      ['node', 'web', 'serve', '--no-cache', '--threshold', '-10'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.flags).toEqual({ cache: true })
+    expect(ctx.unkFlags).toEqual(['--no-cache', '-10'])
+    expect(memory.descriptions()).toEqual([
+      'Unknown flag occurred',
+      'Missing flag value',
+      'Unknown flag occurred',
+    ])
+  })
+
   it('supports positional rest values and omitted optional flags', async () => {
     const archive = cmd(
       {
