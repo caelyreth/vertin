@@ -6,8 +6,8 @@
  * whatever it is a constant or a function that returns an error message.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
- * @license MPL-2.0
+ * @author Yu <i@voidknot.com>
+ * @license MIT
  */
 
 import { msg } from './helper'
@@ -19,6 +19,7 @@ export const NO_COMMAND_SPECIFIED = msg({
   desc: 'No command specified; nothing runs',
 })
 
+/** Creates a diagnostic for an unknown command token. */
 export function INVALID_COMMAND(
   source: string[],
   offset: number,

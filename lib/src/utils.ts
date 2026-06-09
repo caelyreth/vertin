@@ -4,8 +4,8 @@
  * This file contains all utility functions across the framework Vertin.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
- * @license MPL-2.0
+ * @author Yu <i@voidknot.com>
+ * @license MIT
  */
 
 import type { Failure, Result, Success } from './types'
@@ -13,7 +13,7 @@ import type { Failure, Result, Success } from './types'
 // MARK: - Result
 
 /**
- * Helper function to create s success result.
+ * Creates a success result.
  *
  * @param value Returned success value.
  */
@@ -25,7 +25,7 @@ export function Ok<T>(value: T): Success<T> {
 }
 
 /**
- * Helper function to create s failure result.
+ * Creates a failure result.
  *
  * @param errors Returned error value(s).
  */

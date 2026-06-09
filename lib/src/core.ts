@@ -5,8 +5,8 @@
  * to resolve user input into its corresponding context.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
- * @license MPL-2.0
+ * @author Yu <i@voidknot.com>
+ * @license MIT
  */
 
 import { INVALID_COMMAND, NO_COMMAND_SPECIFIED } from './errors'
@@ -20,43 +20,52 @@ import type {
 } from './types'
 import { Err, Ok } from './utils'
 
-// MARK: - Constants &  Utilities
+// MARK: - Constants & Utilities
 
 const SINGLE_DASH = '-'
 
-function isFlag(str: string) {
-  return str.startsWith(SINGLE_DASH)
+function isFlag(token: string | undefined): token is string {
+  return token?.startsWith(SINGLE_DASH) ?? false
+}
+
+function getOwn<T>(
+  record: Readonly<Record<string, T>> | undefined,
+  key: string | undefined,
+): T | undefined {
+  if (!record || !key || !Object.hasOwn(record, key)) return undefined
+  return record[key]
 }
 
 // MARK: - Command Matching
 
+/** Resolves the command selected by the provided argv tokens. */
 export function match(
   spec: App,
   argv: readonly string[],
   offset: number = 2,
-): Result<[Command, number], Message> {
-  // TODO: support to help and completion commands
+): Result<readonly [Command, number], Message> {
   let token = argv[offset]
 
-  if (token && isFlag(token)) {
+  if (isFlag(token)) {
     if (spec.main) {
       return Ok([spec.main, offset])
     }
     return Err(NO_COMMAND_SPECIFIED)
   }
 
-  if (token && spec.sub && token in spec.sub) {
-    let cmd = spec.sub[token]
+  const subCommand = getOwn(spec.sub, token)
+  if (subCommand) {
+    let cmd = subCommand
     offset += 1
 
     while (true) {
       token = argv[offset]
-      if (token && cmd.sub && token in cmd.sub) {
-        cmd = cmd.sub[token]
-        offset += 1
-      } else {
+      const child = getOwn(cmd.sub, token)
+      if (!child) {
         return Ok([cmd, offset])
       }
+      cmd = child
+      offset += 1
     }
   }
 
@@ -65,7 +74,7 @@ export function match(
   }
 
   if (token) {
-    return Err(INVALID_COMMAND([...argv], offset, token))
+    return Err(INVALID_COMMAND(Array.from(argv), offset, token))
   }
 
   return Err(NO_COMMAND_SPECIFIED)
@@ -73,34 +82,35 @@ export function match(
 
 // MARK: - Value Resolution
 
-// Resolve a raw value with given non-array resolver
-// Success: resolved value; Error: markup string
+/** Resolves a raw value with a scalar resolver. */
 function _resolve(
   value: string,
-  r: FnDeriver | CtorDeriver = String,
-): Result<any, string> {
-  if (r === String) return Ok(value)
-  if (r === Number) {
+  resolver: FnDeriver | CtorDeriver = String,
+): Result<unknown, string> {
+  if (resolver === String) return Ok(value)
+  if (resolver === Number) {
     const resolved = Number(value)
     if (Number.isNaN(resolved)) return Err(`\`${value}\` is not a valid number`)
     return Ok(resolved)
   }
-  if (r === Boolean) {
-    if (value === 'true' || value === '1') return Ok(true)
-    if (value === 'false' || value === '0') return Ok(false)
-    return Err(`\`${value}\` is not a valid boolean value`)
-  }
-  if (typeof r === 'function') {
-    try {
-      const resolved = (r as FnDeriver)(value)
-      return Ok(resolved)
-    } catch (e: any) {
-      if (e instanceof Error) {
-        return Err(e.message)
-      } else {
-        return Err(`\`${value}\` is not resolvable`)
-      }
+  if (resolver === Boolean) {
+    switch (value) {
+      case 'true':
+      case '1':
+        return Ok(true)
+      case 'false':
+      case '0':
+        return Ok(false)
+      default:
+        return Err(`\`${value}\` is not a valid boolean value`)
     }
   }
-  return Err('Field is configured with a invalid resolver')
+
+  try {
+    return Ok(resolver(value))
+  } catch (error: unknown) {
+    return Err(
+      error instanceof Error ? error.message : `\`${value}\` is not resolvable`,
+    )
+  }
 }

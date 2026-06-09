@@ -11,7 +11,7 @@
  * directly with Vertin.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
+ * @author Yu <i@voidknot.com>
  * @license MIT (Inherited from @uttr/tint)
  */
 
@@ -61,7 +61,7 @@ const STYLE = {
 /** Styler is used to style text with ANSI escape codes. */
 export interface Styler {
   (text: string): string
-  (strings: TemplateStringsArray, ...values: any[]): string
+  (strings: TemplateStringsArray, ...values: unknown[]): string
 
   // Foreground
   readonly black: Styler
@@ -96,7 +96,7 @@ export interface Styler {
   readonly reset: Styler
 }
 
-// Internal only
+/** Internal styler state carried by chained style functions. */
 interface StylerInternal extends Styler {
   _open: string
   _close: string
@@ -105,15 +105,11 @@ interface StylerInternal extends Styler {
 
 // MARK: - Env Detection
 
-// TODO: make it robust enough
 function isColorSupported(): boolean {
-  if (typeof process !== 'undefined') {
-    const { env, stdout } = process
-    if (env.NO_COLOR || env.NODE_DISABLE_COLORS) return false
-    if (env.FORCE_COLOR) return true
-    return Boolean(stdout && stdout.isTTY)
-  }
-  return false // Fallback for non-node envs
+  const { env, stdout } = process
+  if (env.NO_COLOR || env.NODE_DISABLE_COLORS) return false
+  if (env.FORCE_COLOR) return true
+  return stdout.isTTY === true
 }
 
 const ENABLED = isColorSupported()
@@ -145,7 +141,13 @@ for (const [name, [open, close]] of Object.entries(STYLE)) {
 
 const proto = {}
 
-const escapeRegex = (s: string) => s.replace(/\[/g, '\\[')
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+function isTemplateStringsArray(
+  value: string | TemplateStringsArray,
+): value is TemplateStringsArray {
+  return Array.isArray(value) && 'raw' in value
+}
 
 // Factory
 function createStyler(
@@ -156,16 +158,16 @@ function createStyler(
 ): Styler {
   const fn = function (
     strings: TemplateStringsArray | string,
-    ...values: any[]
+    ...values: unknown[]
   ) {
     let text: string
     if (typeof strings === 'string' && values.length === 0) {
       text = strings
-    } else if (Array.isArray(strings) && (strings as any).raw) {
+    } else if (isTemplateStringsArray(strings)) {
       text = strings[0]
       const len = values.length
       for (let i = 0; i < len; i++) {
-        text += values[i] + strings[i + 1]
+        text += String(values[i]) + strings[i + 1]
       }
     } else {
       text = String(strings)
@@ -175,12 +177,11 @@ function createStyler(
       return text
     }
 
-    if (regex && regex.test(text)) {
-      regex.lastIndex = 0
-      text = text.replace(regex, (match) => replacements[match] || match)
+    if (regex) {
+      text = text.replace(regex, (match) => replacements[match] ?? match)
     }
 
-    return open + text + close
+    return `${open}${text}${close}`
   } as StylerInternal
 
   fn._open = open
@@ -191,12 +192,9 @@ function createStyler(
   return fn
 }
 
-// Base
 const base = createStyler('', '', null, {})
 
-for (const name in styles) {
-  const { open, close } = styles[name]!
-
+for (const [name, { open, close }] of Object.entries(styles)) {
   Object.defineProperty(proto, name, {
     get() {
       const parent = this as StylerInternal
@@ -209,13 +207,12 @@ for (const name in styles) {
 
       const newReplacements = { ...parentReplacements }
 
-      // Handle RESET (0m) TODO: verify behavior
       const resetKey = `${ESC}0m`
-      const existingReset = newReplacements[resetKey] || resetKey
+      const existingReset = newReplacements[resetKey] ?? resetKey
       newReplacements[resetKey] = existingReset + open
 
       const closeKey = close
-      const existingClose = newReplacements[closeKey] || closeKey
+      const existingClose = newReplacements[closeKey] ?? closeKey
       newReplacements[closeKey] = existingClose + open
 
       const keys = Object.keys(newReplacements).map(escapeRegex)

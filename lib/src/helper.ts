@@ -5,8 +5,8 @@
  * create specifications easily with type inference.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
- * @license MPL-2.0
+ * @author Yu <i@voidknot.com>
+ * @license MIT
  */
 
 import type {
@@ -28,6 +28,7 @@ import type {
 
 // MARK: - Subsystem
 
+/** Helper function to create a typed message. */
 export function msg<T extends Message>(message: T): T {
   return message
 }
@@ -39,14 +40,14 @@ export function constr<T>(validator: Validator<T>): Validator<T> {
 
 // MARK: - Parameter
 
-/** Helper function to create an record of argument parameters. */
+/** Helper function to create a record of argument parameters. */
 export function args<const T extends ArgumentRecord & _ParameterMap<T>>(
   record: T,
 ): T {
   return record
 }
 
-/** Helper function to create an record of flag parameters. */
+/** Helper function to create a record of flag parameters. */
 export function flags<const T extends FlagRecord & _ParameterMap<T>>(
   record: T,
 ): T {
@@ -73,7 +74,7 @@ export function cmd<
   const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,
   const P extends Snippet[],
 >(
-  spec: Omit<Command<A, F, S, C, G>, 'handler'> & {
+  spec: Omit<Command<A, F, S, C, G, P>, 'handler'> & {
     readonly args?: A
     readonly flags?: F
     readonly sections?: S
@@ -81,8 +82,8 @@ export function cmd<
     readonly categories?: G
     readonly use?: P
   },
-  handler: Command<A, F, S, C, G>['handler'],
-): Command<A, F, S, C, G> {
+  handler: Command<A, F, S, C, G, P>['handler'],
+): Command<A, F, S, C, G, P> {
   return {
     ...spec,
     handler,

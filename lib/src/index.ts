@@ -1,7 +1,13 @@
-// re-exports
+/**
+ * @file Public package surface.
+ *
+ * @copyright Kohane 2025
+ * @author Yu <i@voidknot.com>
+ * @license MIT
+ */
+
 export * from './helper'
 
-// re-export types
 export type {
   CtorDeriver,
   Deriver,

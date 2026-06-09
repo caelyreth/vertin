@@ -5,8 +5,8 @@
  * create formats like indentation, etc., easily.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
- * @license MPL-2.0
+ * @author Yu <i@voidknot.com>
+ * @license MIT
  */
 
 /** Interface for the stateful Formatter object returned by createFormatter. */
@@ -17,10 +17,7 @@ export interface Formatter {
   /** Increases the current indentation level by one unit. */
   indent: () => void
 
-  /**
-   * Decreases the current indentation level by one unit. Throws if already at
-   * base level.
-   */
+  /** Decreases the current indentation level without going below base level. */
   shift: () => void
 
   /** Adds a blank line (newline character) without any indentation. */
@@ -38,35 +35,26 @@ export function createFormatter(indentUnit: string = '  '): Formatter {
   const output: string[] = []
   let level = 0
 
-  const getPrefix = (): string => {
-    return indentUnit.repeat(level)
+  const append = (raw: string): void => {
+    if (output.length > 0) output.push('\n')
+    output.push(raw)
   }
+
+  const getPrefix = (): string => indentUnit.repeat(level)
 
   return {
     line: (raw: string) => {
-      const indentedLine = getPrefix() + raw
-      if (output.length > 0) {
-        output.push('\n')
-      }
-      output.push(indentedLine)
+      append(getPrefix() + raw)
     },
     emptyLine: () => {
-      if (output.length > 0) {
-        output.push('\n')
-      }
-      output.push('')
+      append('')
     },
     indent: () => {
       level += 1
     },
     shift: () => {
-      if (level <= 0) {
-        level = 0
-      }
-      level -= 1
+      level = Math.max(0, level - 1)
     },
-    raw: () => {
-      return output.join('')
-    },
+    raw: () => output.join(''),
   }
 }

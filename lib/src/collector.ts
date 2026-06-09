@@ -1,48 +1,47 @@
 /**
  * @file Message collector subsystem.
  *
- * Collector is a main concept in the Vertin framework; it is mainly
- * Responsible for the non-throwable error handling inside the framework.
- * It is also responsible for the message formatting and display.
- *
- * These APIs could be used in many parts of the framework by developers.
- * It will be injected into the handler context, constraint context, etc.
+ * The collector centralizes non-throwing diagnostics and terminal output. It is
+ * injected into handlers, validators, and other runtime contexts.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
- * @license MPL-2.0
+ * @author Yu <i@voidknot.com>
+ * @license MIT
  */
 
 import process from 'node:process'
 
 import type { Formatter } from './formatter'
 import { createFormatter } from './formatter'
-import { blue, cyan, magenta, normal, red, yellow } from './tint'
-import type { Collector, Diagnostics, Message } from './types'
+import { blue, cyan, magenta, normal, rawLen, red, yellow } from './tint'
+import type { Collector, Diagnostics, Message, Plural } from './types'
 
 // MARK: - Internal Types
 
 interface QueuedMessage {
-  msg: Message
+  readonly msg: Message
   logged: boolean
+}
+
+function toArray<T>(value: Plural<T>): T[] {
+  return Array.isArray(value) ? value : [value]
 }
 
 // MARK: - Display Functions
 
-function displayGroup(heading: string, raw: string | string[], fmt: Formatter) {
+function displayGroup(heading: string, raw: Plural<string>, fmt: Formatter) {
   fmt.indent()
 
   if (Array.isArray(raw)) {
     fmt.line(heading)
 
     fmt.indent()
-    for (const el of raw) {
-      fmt.line(`- ${el}`)
+    for (const item of raw) {
+      fmt.line(`- ${item}`)
     }
     fmt.shift()
   } else {
-    heading += raw
-    fmt.line(heading)
+    fmt.line(`${heading}${raw}`)
   }
 
   fmt.shift()
@@ -51,31 +50,31 @@ function displayGroup(heading: string, raw: string | string[], fmt: Formatter) {
 function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
   fmt.indent()
 
-  let sourceLine = ''
-  let markupLine = ''
+  const prefix = diag.prefix ?? ''
+  let sourceLine = prefix
+  let markupLine = ' '.repeat(rawLen(prefix))
 
   if (Array.isArray(diag.source)) {
     sourceLine += diag.source.join(' ')
-    for (let i = 0; i < diag.source.length; i++) {
-      const elem = diag.source[i]
-      if (i === diag.offset) {
-        markupLine += '^'.repeat(elem.length)
-      } else if (i <= diag.offset) {
-        markupLine += ' '.repeat(elem.length)
-      } else {
+    for (const [index, item] of diag.source.entries()) {
+      if (index > diag.offset) {
         break
       }
-      if (i < diag.source.length - 1 || i === diag.offset) {
+
+      markupLine +=
+        index === diag.offset
+          ? '^'.repeat(item.length)
+          : ' '.repeat(item.length)
+
+      if (index < diag.source.length - 1 || index === diag.offset) {
         markupLine += ' '
       }
     }
   } else {
     sourceLine += diag.source
     markupLine += ' '.repeat(diag.offset)
-    let endPos = diag.offset
-    while (endPos < diag.source.length && diag.source[endPos] !== ' ') {
-      endPos++
-    }
+    const nextSpace = diag.source.indexOf(' ', diag.offset)
+    const endPos = nextSpace === -1 ? diag.source.length : nextSpace
     markupLine += '^'.repeat(endPos - diag.offset)
   }
 
@@ -126,18 +125,22 @@ export function createCollector(): Collector {
 
   return {
     log: (msgs, brief) => {
-      const resolved = Array.isArray(msgs) ? msgs : [msgs]
-      for (const m of resolved) {
-        display(m, brief)
-        queue.push({ msg: m, logged: true })
+      for (const msg of toArray(msgs)) {
+        display(msg, brief)
+        queue.push({ msg, logged: true })
       }
     },
     submit: (msgs) => {
-      const resolved = Array.isArray(msgs) ? msgs : [msgs]
-      for (const m of resolved) {
-        queue.push({ msg: m, logged: false })
+      for (const msg of toArray(msgs)) {
+        queue.push({ msg, logged: false })
       }
     },
-    collect: () => {},
+    collect: (brief) => {
+      for (const entry of queue) {
+        if (entry.logged) continue
+        display(entry.msg, brief)
+        entry.logged = true
+      }
+    },
   }
 }

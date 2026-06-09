@@ -1,13 +1,12 @@
 /**
  * @file Essential types across Vertin framework.
  *
- * This file contains all shared type across the framework Vertin.
- * Those types with `_` prefix are internal types, although they are
- * exported, they are not intended to be used directly by developers.
+ * This file contains shared framework types. Types with an `_` prefix are
+ * exported for inference support and are not intended for direct user code.
  *
  * @copyright Kohane 2025
- * @author Kohane <i@kept.to>
- * @license MPL-2.0
+ * @author Yu <i@voidknot.com>
+ * @license MIT
  */
 
 import type { Styler } from './tint'
@@ -19,6 +18,9 @@ export type Severity = 'info' | 'warn' | 'error'
 
 /** Diagnostics of a message in collector subsystem. */
 export interface Diagnostics {
+  /** Optional text shown before the diagnostic source. */
+  readonly prefix?: string
+
   /** Source of the diagnostics. */
   readonly source: Plural<string>
 
@@ -46,7 +48,7 @@ export interface Diagnostics {
   readonly hint?: Plural<string>
 }
 
-/** Message of a message in collector subsystem. */
+/** Message emitted by the collector subsystem. */
 export interface Message {
   /** Severity level of the message. */
   readonly level: Severity
@@ -81,23 +83,26 @@ export interface Collector {
 // MARK: - Deriver
 
 /**
- * A **function** that derives a dedicated type from raw value string
+ * A function that derives a dedicated type from a raw value string.
  *
  * You can use a custom function to parse a string into a _dedicated type_, e.g.
  * parsing from raw encoded input string to a decoded type, so that we could
  * utilize all _built-in features_ of Vertin with that type.
  */
-export type FnDeriver<R = any> = (raw: string) => R
+export type FnDeriver<R = unknown> = (raw: string) => R
 
 /**
- * Language's built-in constructor to derive their corresponding primitive type
- * from raw value string
+ * Built-in constructor that derives a primitive type from a raw value string.
  *
- * Vertin only support a subset of language's built-in constructor. You can use
+ * Vertin only supports a subset of built-in constructors. You can use
  * {@link FnDeriver} to support other types in construction.
  *
  * @example
- *   ;(`String`, `Number`, `Boolean`)
+ *   ;```ts
+ *   String
+ *   Number
+ *   Boolean
+ *   ```
  */
 export type CtorDeriver =
   | StringConstructor
@@ -105,23 +110,21 @@ export type CtorDeriver =
   | BooleanConstructor
 
 /**
- * A deriver is a **standard function** or part of a language's built-in
- * **constructors** used to derive a concrete type from raw value string.
+ * Function or supported constructor used to derive a concrete value from a raw
+ * string.
  *
- * A {@link Deriver} is used for value **construction**, affecting the type of
- * value you could used from {@link HandlerContext}. Due to the same reason, it
- * is lack in displaying detailed messages in error messages and generating good
- * shell completion _(e.g. completion for a file extension, etc.)_
- *
- * If you want to make a better UX for your end user, consider using `validate`
- * API in the parameter specification to make better messages.
- *
- * In contrast, `derive` API in that specification is mainly for better DX.
+ * A {@link Deriver} controls the value type exposed through
+ * {@link HandlerContext}. Use `constr` for user-facing validation and richer
+ * diagnostics.
  */
-export type Deriver = FnDeriver | CtorDeriver | FnDeriver[] | CtorDeriver[]
+export type Deriver =
+  | FnDeriver
+  | CtorDeriver
+  | readonly FnDeriver[]
+  | readonly CtorDeriver[]
 
 /**
- * Utility type to extract the dervied type from a non-array deriver
+ * Utility type to extract the derived type from a non-array deriver.
  *
  * @private
  * @template T The deriver unit type to extract
@@ -137,7 +140,7 @@ type _DeriveUnit<T> = T extends StringConstructor
         : never
 
 /**
- * Utility type to extract the dervied type from any {@link Deriver}.
+ * Utility type to extract the derived type from any {@link Deriver}.
  *
  * @private
  * @template T Any kind of {@link Deriver} type to extract
@@ -150,24 +153,21 @@ export type _Derive<T extends Deriver> = T extends readonly (infer U)[]
 
 // MARK: - Validator
 
-/** Working context of a validator */
+/** Working context of a validator. */
 export interface ValidatorContext<T> {
-  /** Raw value of current field */
+  /** Raw value of current field. */
   readonly value: T
 
-  /** Collector subsystem context */
+  /** Collector subsystem context. */
   readonly collector: Collector
 }
 
 /**
- * Validate function to check if a value is valid
+ * Function that validates a resolved value.
  *
- * A validator is used to **audit** a value in runtime, affecting the UX of end
- * users in many aspects; it could be used to reduce boilerplate runtime
- * checking, producing comprehensive error messaging with Vertin's un-throwable
- * APIs and generating well shell completions.
+ * Validators centralize runtime checks, diagnostics, and future completion
+ * metadata.
  */
-// TODO: return something to build shell completions.
 export type Validator<T> = (ctx: ValidatorContext<T>) => void
 
 // MARK: - Parameter
@@ -193,7 +193,7 @@ interface _BaseParameter<T extends Deriver = Deriver> {
   /** Fallback value if parameter field omitted. */
   readonly fallback?: _Derive<T>
 
-  /** Constraint function to check if the parameter is valid. */
+  /** Validator function to check if the parameter is valid. */
   readonly constr?: Validator<_Derive<T>>
 }
 
@@ -235,10 +235,10 @@ export interface Flag<T extends Deriver = Deriver> extends _BaseParameter<T> {
   readonly alias?: Plural<string>
 }
 
-/** Record type for argument and argument specifications. */
+/** Record type for argument specifications. */
 export type ArgumentRecord = Record<string, Argument>
 
-/** Record type for argument and flag specifications. */
+/** Record type for flag specifications. */
 export type FlagRecord = Record<string, Flag>
 
 /** Section style flag specification. */
@@ -248,8 +248,6 @@ export interface FlagSection<T extends FlagRecord = FlagRecord> {
 
   /** Tint color of the flag section. */
   readonly styler?: Styler
-
-  // TODO!: add more features to section grouping
 
   /** Flags in the flag section. */
   readonly flags: (keyof T)[]
@@ -263,9 +261,8 @@ export interface FlagSection<T extends FlagRecord = FlagRecord> {
  *
  * @private
  */
-export type _GetResolver<T extends Argument> = T['resolver'] extends Deriver
-  ? T['resolver']
-  : StringConstructor
+export type _GetResolver<T extends _BaseParameter> =
+  T['resolver'] extends Deriver ? T['resolver'] : StringConstructor
 
 /**
  * Utility type to map a parameter record to a parameter map.
@@ -282,7 +279,7 @@ export type _ParameterMap<T extends Record<string, _BaseParameter>> = {
 }
 
 /**
- * Utility type to map a flag record into flag section.
+ * Utility type to map a flag record into flag sections.
  *
  * @private
  */
@@ -290,7 +287,7 @@ export type _FlagSectionsMap<S extends FlagSection[], F extends FlagRecord> = {
   [K in keyof S]: S[K] extends FlagSection ? FlagSection<F> : never
 }
 
-/** Utility type to parse argument record to a parsed argument record. */
+/** Utility type to parse an argument record into resolved argument values. */
 type _ParsedArgument<T extends ArgumentRecord> = {
   [K in keyof T]: T[K]['fallback'] extends _Derive<_GetResolver<T[K]>>
     ? _Derive<_GetResolver<T[K]>>
@@ -299,7 +296,7 @@ type _ParsedArgument<T extends ArgumentRecord> = {
       : _Derive<_GetResolver<T[K]>>
 }
 
-/** Utility type to parse flag record to a parsed flag record. */
+/** Utility type to parse a flag record into resolved flag values. */
 type _ParsedFlagRecord<T extends FlagRecord> = {
   [K in keyof T]: T[K]['fallback'] extends _Derive<_GetResolver<T[K]>>
     ? _Derive<_GetResolver<T[K]>>
@@ -353,7 +350,7 @@ export interface Snippet<
   readonly sections?: S
 }
 
-/** @private */
+/** Utility type to preserve snippet-level inference. */
 export type _SnippetMap<T extends Snippet> = Snippet & {
   flags?: FlagRecord & _ParameterMap<NonNullable<T['flags']>>
   args?: ArgumentRecord & _ParameterMap<NonNullable<T['args']>>
@@ -380,7 +377,7 @@ export type HandlerContext<
    *
    * @private
    */
-  __internal__: {
+  readonly __internal__: {
     /**
      * Access the whole application specification.
      *
@@ -390,7 +387,7 @@ export type HandlerContext<
   }
 }
 
-/** Record type for argument and command specifications. */
+/** Record type for command specifications. */
 export type CommandRecord = Record<string, Command>
 
 /** Command specification. */
@@ -423,14 +420,11 @@ export interface Command<
   /** Snippets used in the command. */
   readonly use?: P
 
-  /**
-   * Handler function of the command.
-   *
-   * @todo Complete handler system, currently it's just a placeholder.
-   */
+  /** Handler function of the command. */
   readonly handler: (ctx: HandlerContext<A, F, P>) => void
 }
 
+/** Section-style grouping for related subcommands. */
 export interface CommandCategory<T extends CommandRecord = CommandRecord> {
   /** Brief description of the command category. */
   readonly desc?: string
@@ -438,14 +432,12 @@ export interface CommandCategory<T extends CommandRecord = CommandRecord> {
   /** Tint color of the command category. */
   readonly styler?: Styler
 
-  // TODO!: add more features to category grouping
-
-  /** Flags in the command category. */
+  /** Commands in the command category. */
   readonly cmds: (keyof T)[]
 }
 
 /**
- * Utility type to map a command record into category section.
+ * Utility type to map a command record into command categories.
  *
  * @private
  */
@@ -458,11 +450,7 @@ export type _CommandCategoriesMap<
 
 // MARK: - App
 
-/**
- * Vertin framework configuration.
- *
- * @todo Complete configuration system, currently it's just a placeholder.
- */
+/** Vertin framework configuration. */
 export interface AppConfig {}
 
 /** Application specification. */
@@ -524,7 +512,7 @@ export type Plural<T> = T | T[]
 
 /** Utility type to convert a union type to an intersection type. */
 export type UnionToIntersection<U> = (
-  U extends any ? (x: U) => void : never
+  U extends unknown ? (x: U) => void : never
 ) extends (x: infer I) => void
   ? I
   : never
