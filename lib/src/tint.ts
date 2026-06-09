@@ -10,7 +10,7 @@
  * To maintain a zero-dependency footprint, this library is bundled
  * directly with Vertin.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT (Inherited from @uttr/tint)
  */

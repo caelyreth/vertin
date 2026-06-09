@@ -4,7 +4,7 @@
  * This file contains shared framework types. Types with an `_` prefix are
  * exported for inference support and are not intended for direct user code.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */

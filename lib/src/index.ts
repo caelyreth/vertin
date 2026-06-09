@@ -1,7 +1,7 @@
 /**
  * @file Public package surface.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */

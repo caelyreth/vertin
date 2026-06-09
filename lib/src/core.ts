@@ -4,7 +4,7 @@
  * This file contains all core functions across the framework
  * to resolve user input into its corresponding context.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */

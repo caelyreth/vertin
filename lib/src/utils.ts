@@ -3,7 +3,7 @@
  *
  * This file contains all utility functions across the framework Vertin.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */

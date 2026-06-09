@@ -4,7 +4,7 @@
  * Vertin uses a spec-first pattern, these helper functions are used to
  * create specifications easily with type inference.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */

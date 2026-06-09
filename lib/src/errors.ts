@@ -5,7 +5,7 @@
  * the framework Vertin. All built-in errors are in UPPER_SNAKE_CASE,
  * whatever it is a constant or a function that returns an error message.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */

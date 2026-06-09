@@ -4,7 +4,7 @@
  * Formatter is a utility in the Vertin framework; it can be used to
  * create formats like indentation, etc., easily.
  *
- * @copyright Kohane 2025
+ * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */
