@@ -345,6 +345,197 @@ describe('runtime context construction', () => {
     expect(memory.descriptions()).toEqual(['Unknown flag occurred'])
   })
 
+  it('supports variadic array flag values with comma and whitespace separators', async () => {
+    const calculate = cmd(
+      {
+        args: args({
+          target: {},
+        }),
+        flags: flags({
+          number: { resolver: [Number], fallback: [] as number[] },
+          label: { alias: 'l', resolver: [String], fallback: [] as string[] },
+        }),
+      },
+      () => {},
+    )
+    const collector = quiet_collector()
+
+    const ctx = await create_context(
+      { sub: { calculate } },
+      calculate,
+      [
+        'node',
+        'math',
+        'calculate',
+        '--number',
+        '-1,-2',
+        '--number',
+        '1,2,3',
+        '--number',
+        '4,',
+        '5,',
+        '6',
+        '--label=fast,',
+        'green,',
+        'safe',
+        '--number',
+        '7',
+        '8',
+        '9',
+        'dist',
+      ],
+      3,
+      collector,
+    )
+
+    expect(ctx.args).toEqual({ target: 'dist' })
+    expect(ctx.flags).toEqual({
+      number: [-1, -2, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      label: ['fast', 'green', 'safe'],
+    })
+    expect(ctx.unkArgs).toEqual([])
+    expect(ctx.unkFlags).toEqual([])
+    expect(collector.has_errors()).toBe(false)
+
+    const memory = memory_collector()
+    const missingCtx = await create_context(
+      { sub: { calculate } },
+      calculate,
+      ['node', 'math', 'calculate', '--number', '--label', 'done', 'dist'],
+      3,
+      memory.collector,
+    )
+
+    expect(missingCtx.args).toEqual({ target: 'dist' })
+    expect(missingCtx.flags).toEqual({ number: [], label: ['done'] })
+    expect(memory.descriptions()).toEqual(['Missing flag value'])
+  })
+
+  it('can disable variadic array flag values', async () => {
+    const calculate = cmd(
+      {
+        args: args({
+          target: {},
+        }),
+        flags: flags({
+          number: { resolver: [Number], fallback: [] as number[] },
+        }),
+      },
+      () => {},
+    )
+    const collector = quiet_collector()
+
+    const ctx = await create_context(
+      {
+        config: {
+          tweaks: {
+            variadicFlagValues: false,
+          },
+        },
+        sub: { calculate },
+      },
+      calculate,
+      ['node', 'math', 'calculate', '--number', '1', '2'],
+      3,
+      collector,
+    )
+
+    expect(ctx.args).toEqual({ target: '2' })
+    expect(ctx.flags).toEqual({ number: [1] })
+    expect(collector.has_errors()).toBe(false)
+  })
+
+  it('reserves required positional values around variadic array flags', async () => {
+    const scalarArgs = cmd(
+      {
+        args: args({
+          project: {},
+          target: {},
+        }),
+        flags: flags({
+          number: { resolver: [Number], fallback: [] as number[] },
+        }),
+      },
+      () => {},
+    )
+    const scalarCollector = quiet_collector()
+
+    const scalarCtx = await create_context(
+      { sub: { scalarArgs } },
+      scalarArgs,
+      ['node', 'math', 'scalarArgs', 'core', '--number', '1', '2', 'dist'],
+      3,
+      scalarCollector,
+    )
+
+    expect(scalarCtx.args).toEqual({ project: 'core', target: 'dist' })
+    expect(scalarCtx.flags).toEqual({ number: [1, 2] })
+    expect(scalarCollector.has_errors()).toBe(false)
+
+    const restArgs = cmd(
+      {
+        args: args({
+          files: { resolver: [String] },
+        }),
+        flags: flags({
+          number: { resolver: [Number], fallback: [] as number[] },
+        }),
+      },
+      () => {},
+    )
+    const futureRestCollector = quiet_collector()
+
+    const futureRestCtx = await create_context(
+      { sub: { restArgs } },
+      restArgs,
+      ['node', 'math', 'restArgs', '--number', '1', '2', 'src/index.ts'],
+      3,
+      futureRestCollector,
+    )
+
+    expect(futureRestCtx.args).toEqual({ files: ['src/index.ts'] })
+    expect(futureRestCtx.flags).toEqual({ number: [1, 2] })
+    expect(futureRestCollector.has_errors()).toBe(false)
+
+    const usedRestCollector = quiet_collector()
+    const usedRestCtx = await create_context(
+      { sub: { restArgs } },
+      restArgs,
+      ['node', 'math', 'restArgs', 'src/index.ts', '--number', '1', '2'],
+      3,
+      usedRestCollector,
+    )
+
+    expect(usedRestCtx.args).toEqual({ files: ['src/index.ts'] })
+    expect(usedRestCtx.flags).toEqual({ number: [1, 2] })
+    expect(usedRestCollector.has_errors()).toBe(false)
+
+    const optionalArg = cmd(
+      {
+        args: args({
+          target: { required: false },
+        }),
+        flags: flags({
+          number: { resolver: [Number], fallback: [] as number[] },
+        }),
+      },
+      () => {},
+    )
+    const optionalCollector = quiet_collector()
+
+    const optionalCtx = await create_context(
+      { sub: { optionalArg } },
+      optionalArg,
+      ['node', 'math', 'optionalArg', '--number', '1', '2'],
+      3,
+      optionalCollector,
+    )
+
+    expect(optionalCtx.args).toEqual({})
+    expect(optionalCtx.flags).toEqual({ number: [1, 2] })
+    expect(optionalCollector.has_errors()).toBe(false)
+  })
+
   it('can disable parser compatibility tweaks', async () => {
     const serve = cmd(
       {
@@ -365,6 +556,7 @@ describe('runtime context construction', () => {
           tweaks: {
             booleanNegation: false,
             shortBooleanClusters: false,
+            variadicFlagValues: false,
             negativeNumberValues: false,
           },
         },
@@ -381,6 +573,38 @@ describe('runtime context construction', () => {
     expect(memory.descriptions()).toEqual([
       'Unknown flag occurred',
       'Unknown flag occurred',
+      'Missing flag value',
+      'Unknown flag occurred',
+    ])
+
+    const number = cmd(
+      {
+        flags: flags({
+          value: { resolver: [Number], fallback: [] as number[] },
+        }),
+      },
+      () => {},
+    )
+    const negativeMemory = memory_collector()
+
+    const negativeCtx = await create_context(
+      {
+        config: {
+          tweaks: {
+            negativeNumberValues: false,
+          },
+        },
+        sub: { number },
+      },
+      number,
+      ['node', 'web', 'number', '--value', '-1'],
+      3,
+      negativeMemory.collector,
+    )
+
+    expect(negativeCtx.flags).toEqual({ value: [] })
+    expect(negativeCtx.unkFlags).toEqual(['-1'])
+    expect(negativeMemory.descriptions()).toEqual([
       'Missing flag value',
       'Unknown flag occurred',
     ])

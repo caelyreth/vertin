@@ -400,6 +400,17 @@ export interface AppTweaks {
   readonly shortBooleanClusters?: boolean
 
   /**
+   * Read multiple values from one array flag occurrence.
+   *
+   * Supports whitespace and comma-separated forms such as `--name a b`, `--name
+   * a,b`, and `--name a, b`.
+   *
+   * @default
+   * `true`
+   */
+  readonly variadicFlagValues?: boolean
+
+  /**
    * Treat negative numeric tokens as values for Number flags.
    *
    * @default

@@ -51,12 +51,14 @@ type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
 interface _RuntimeTweaks {
   readonly booleanNegation: boolean
   readonly shortBooleanClusters: boolean
+  readonly variadicFlagValues: boolean
   readonly negativeNumberValues: boolean
 }
 
 const default_tweaks: _RuntimeTweaks = {
   booleanNegation: true,
   shortBooleanClusters: true,
+  variadicFlagValues: true,
   negativeNumberValues: true,
 }
 
@@ -136,6 +138,8 @@ function runtime_tweaks(config: AppConfig | undefined): _RuntimeTweaks {
     booleanNegation: tweaks.booleanNegation ?? default_tweaks.booleanNegation,
     shortBooleanClusters:
       tweaks.shortBooleanClusters ?? default_tweaks.shortBooleanClusters,
+    variadicFlagValues:
+      tweaks.variadicFlagValues ?? default_tweaks.variadicFlagValues,
     negativeNumberValues:
       tweaks.negativeNumberValues ?? default_tweaks.negativeNumberValues,
   }
@@ -275,6 +279,17 @@ function split_flag(token: string): readonly [string, string | undefined] {
   return [token.slice(0, index), token.slice(index + 1)]
 }
 
+function split_array_value(value: string): readonly string[] {
+  const values: string[] = []
+
+  for (const part of value.split(',')) {
+    const item = part.trim()
+    if (item.length > 0) values.push(item)
+  }
+
+  return values
+}
+
 function boolean_flag_key(
   token: string,
   tokens: ReadonlyMap<string, string>,
@@ -326,14 +341,167 @@ function push_flag_value(
   value: string,
   offset: number,
   token: string,
+  split = false,
 ) {
   const values = (parsed.flags[key] ??= [])
-  values.push({ value, offset, token })
+
+  if (!split || !value.includes(',')) {
+    values.push({ value, offset, token })
+    return
+  }
+
+  for (const part of split_array_value(value)) {
+    values.push({ value: part, offset, token })
+  }
+}
+
+function can_read_as_array_value(
+  token: string | undefined,
+  resolver: Resolver | undefined,
+  tweaks: _RuntimeTweaks,
+): token is string {
+  if (token === undefined) return false
+  if (!is_flag_token(token)) return true
+  if (!tweaks.negativeNumberValues) return false
+  if (resolver_unit(resolver) !== Number) return false
+  if (!token.includes(',')) return !Number.isNaN(Number(token))
+
+  const values = split_array_value(token)
+  return (
+    values.length > 0 && values.every((value) => !Number.isNaN(Number(value)))
+  )
+}
+
+function ends_with_comma(value: string): boolean {
+  return value.trimEnd().endsWith(',')
+}
+
+function required_args_left(args: readonly Argument[], used: number): number {
+  let consumed = used
+  let required = 0
+
+  for (const arg of args) {
+    if (consumed > 0) {
+      if (is_array_resolver(arg.resolver)) return 0
+      consumed -= 1
+      continue
+    }
+
+    if (!has_fallback(arg) && is_required(arg, true)) required += 1
+    if (is_array_resolver(arg.resolver)) return required
+  }
+
+  return required
+}
+
+function comma_value_end(
+  argv: readonly string[],
+  offset: number,
+  resolver: Resolver | undefined,
+  tweaks: _RuntimeTweaks,
+): number | undefined {
+  if (!argv[offset]?.includes(',')) return undefined
+
+  let end = offset + 1
+
+  while (
+    ends_with_comma(argv[end - 1]!) &&
+    can_read_as_array_value(argv[end], resolver, tweaks)
+  ) {
+    end += 1
+  }
+
+  return end
+}
+
+function plain_value_end(
+  argv: readonly string[],
+  offset: number,
+  resolver: Resolver | undefined,
+  args: readonly Argument[],
+  parsedArgs: number,
+  tweaks: _RuntimeTweaks,
+): number {
+  let end = offset + 1
+
+  while (can_read_as_array_value(argv[end], resolver, tweaks)) end += 1
+
+  const available = end - offset
+  const reserved = required_args_left(args, parsedArgs)
+  const count = Math.max(1, available - reserved)
+
+  return offset + count
+}
+
+function push_array_flag_values(
+  parsed: _ParsedArgv,
+  key: string,
+  argv: readonly string[],
+  offset: number,
+  end: number,
+) {
+  for (let i = offset; i < end; i++) {
+    const token = argv[i]!
+    push_flag_value(parsed, key, token, i, token, true)
+  }
+}
+
+function read_array_flag_values(
+  parsed: _ParsedArgv,
+  key: string,
+  flag: Flag,
+  argv: readonly string[],
+  offset: number,
+  args: readonly Argument[],
+  tweaks: _RuntimeTweaks,
+): number | undefined {
+  if (!tweaks.variadicFlagValues || !is_array_resolver(flag.resolver))
+    return undefined
+  if (!can_read_as_array_value(argv[offset], flag.resolver, tweaks))
+    return undefined
+
+  const end =
+    comma_value_end(argv, offset, flag.resolver, tweaks) ??
+    plain_value_end(
+      argv,
+      offset,
+      flag.resolver,
+      args,
+      parsed.args.length,
+      tweaks,
+    )
+
+  push_array_flag_values(parsed, key, argv, offset, end)
+
+  return end
+}
+
+function read_array_flag_continuation(
+  parsed: _ParsedArgv,
+  key: string,
+  flag: Flag,
+  argv: readonly string[],
+  offset: number,
+  tweaks: _RuntimeTweaks,
+): number {
+  let end = offset
+
+  while (
+    can_read_as_array_value(argv[end], flag.resolver, tweaks) &&
+    ends_with_comma(argv[end - 1]!)
+  ) {
+    const token = argv[end]!
+    push_flag_value(parsed, key, token, end, token, true)
+    end += 1
+  }
+
+  return end
 }
 
 function parse_argv(
   argv: readonly string[],
   offset: number,
+  args: _Args,
   flags: _Flags,
   collector: _Collector,
   tweaks: _RuntimeTweaks,
@@ -344,6 +512,7 @@ function parse_argv(
     unkArgs: [],
     unkFlags: [],
   }
+  const argValues = Object.values(args)
   const tokens = flag_tokens(flags, collector)
 
   for (let i = offset; i < argv.length; i++) {
@@ -406,12 +575,36 @@ function parse_argv(
     }
 
     if (inline !== undefined) {
-      push_flag_value(parsed, key, inline, i, token)
+      const split =
+        tweaks.variadicFlagValues && is_array_resolver(flag.resolver)
+      push_flag_value(parsed, key, inline, i, token, split)
+
+      if (split && ends_with_comma(inline)) {
+        i =
+          read_array_flag_continuation(parsed, key, flag, argv, i + 1, tweaks) -
+          1
+      }
+
       continue
     }
 
     if (is_boolean_resolver(flag.resolver)) {
       push_flag_value(parsed, key, 'true', i, token)
+      continue
+    }
+
+    const end = read_array_flag_values(
+      parsed,
+      key,
+      flag,
+      argv,
+      i + 1,
+      argValues,
+      tweaks,
+    )
+
+    if (end !== undefined) {
+      i = end - 1
       continue
     }
 
@@ -631,7 +824,14 @@ export async function create_context(
 ): Promise<_RuntimeContext> {
   const params = merge_params(cmd)
   const tweaks = runtime_tweaks(app.config)
-  const parsed = parse_argv(argv, offset, params.flags, collector, tweaks)
+  const parsed = parse_argv(
+    argv,
+    offset,
+    params.args,
+    params.flags,
+    collector,
+    tweaks,
+  )
   const args = parse_arg_values(
     argv,
     params.args,
