@@ -9,7 +9,7 @@
  */
 
 import { invalid_command, no_command_specified } from './errors'
-import type { _Message, _Result, App, Command } from './types'
+import type { _Commands, _Message, _Result, App } from './types'
 import { err, ok } from './utils'
 
 // MARK: - Constants & Utilities
@@ -35,7 +35,7 @@ export function match(
   spec: App,
   argv: readonly string[],
   offset: number = 2,
-): _Result<readonly [Command, number], _Message> {
+): _Result<readonly [_Commands[string], number], _Message> {
   let token = argv[offset]
 
   if (is_flag(token)) {
@@ -47,12 +47,12 @@ export function match(
 
   const subCommand = get_own(spec.sub, token)
   if (subCommand) {
-    let cmd = subCommand
+    let cmd: _Commands[string] = subCommand
     offset += 1
 
     while (true) {
       token = argv[offset]
-      const child = get_own(cmd.sub, token)
+      const child = get_own<_Commands[string]>(cmd.sub, token)
       if (!child) {
         return ok([cmd, offset])
       }

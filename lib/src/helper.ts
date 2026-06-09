@@ -55,8 +55,8 @@ export function snippet<const T extends Snippet & _SnippetMap<T>>(
 
 /** Helper function to create a command. */
 export function cmd<
-  const A extends _Args & _ParamMap<A>,
-  const F extends _Flags & _ParamMap<F>,
+  const A extends _Args,
+  const F extends _Flags,
   const C extends _Commands,
   const P extends Snippet[],
 >(

@@ -8,6 +8,7 @@
 
 import type {
   _Args,
+  _Commands,
   _Flags,
   _Many,
   _Collector,
@@ -16,7 +17,6 @@ import type {
   _ResolverFn,
   App,
   Argument,
-  Command,
   Flag,
   HandlerContext,
   Resolver,
@@ -149,7 +149,7 @@ function resolve_value(
 
 // MARK: - Snippets
 
-function merge_params(cmd: Command): _Params {
+function merge_params(cmd: _Commands[string]): _Params {
   const args: _Args = {}
   const flags: _Flags = {}
 
@@ -425,7 +425,7 @@ function check_markup(key: string, reason: unknown): string {
 
 export async function create_context(
   app: App,
-  cmd: Command,
+  cmd: _Commands[string],
   argv: readonly string[],
   offset: number,
   collector: _Collector,

@@ -160,9 +160,9 @@ type _CheckResult = void | boolean | string
  *
  * Return `false` or a string to report a non-fail-fast check failure.
  */
-export type Check<T> = (
-  ctx: CheckContext<T>,
-) => _CheckResult | Promise<_CheckResult>
+export type Check<T> = {
+  bivariance(ctx: CheckContext<T>): _CheckResult | Promise<_CheckResult>
+}['bivariance']
 
 // MARK: - Parameter
 
@@ -344,7 +344,14 @@ export type HandlerContext<
 }
 
 /** Record type for command specifications. */
-export type _Commands = Record<string, Command>
+type _AnyCommand = Command<any, any, any, any>
+
+/** Record type for command specifications. */
+export type _Commands = Record<string, _AnyCommand>
+
+type _Handler<A extends _Args, F extends _Flags, P extends Snippet[]> = {
+  bivariance(ctx: HandlerContext<A, F, P>): void | Promise<void>
+}['bivariance']
 
 /** Command specification. */
 export interface Command<
@@ -369,7 +376,7 @@ export interface Command<
   readonly use?: P
 
   /** Handler function of the command. */
-  readonly handler: (ctx: HandlerContext<A, F, P>) => void | Promise<void>
+  readonly handler: _Handler<A, F, P>
 }
 
 // MARK: - App

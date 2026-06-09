@@ -65,9 +65,4 @@ export async function run(spec: App): Promise<void> {
     process.exitCode = 1
     return
   }
-
-  collector.collect()
-  if (collector.has_errors()) {
-    process.exitCode = 1
-  }
 }

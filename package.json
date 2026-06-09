@@ -8,10 +8,13 @@
     "fmt": "oxfmt",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc"
   },
   "devDependencies": {
     "@types/node": "catalog:types",
+    "@vitest/coverage-v8": "catalog:tooling",
     "bumpp": "catalog:tooling",
     "oxfmt": "catalog:tooling",
     "oxlint": "catalog:tooling",

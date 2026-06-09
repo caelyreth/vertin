@@ -4,6 +4,7 @@ packages:
 
 catalogs:
   tooling:
+    '@vitest/coverage-v8': ^4.1.8
     bumpp: ^11.1.0
     oxfmt: ^0.51.0
     oxlint: ^1.68.0
