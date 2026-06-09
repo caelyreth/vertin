@@ -119,17 +119,23 @@ function display(msg: _Message, brief: boolean = false) {
 /** Creates a new message collector with empty queue. */
 export function create_collector(): _Collector {
   const queue: _QueuedMessage[] = []
+  let hasErrors = false
+
+  const push = (msg: _Message, logged: boolean) => {
+    if (msg.level === 'error') hasErrors = true
+    queue.push({ msg, logged })
+  }
 
   return {
     log: (msgs, brief) => {
       for (const msg of to_array(msgs)) {
         display(msg, brief)
-        queue.push({ msg, logged: true })
+        push(msg, true)
       }
     },
     submit: (msgs) => {
       for (const msg of to_array(msgs)) {
-        queue.push({ msg, logged: false })
+        push(msg, false)
       }
     },
     collect: (brief) => {
@@ -139,6 +145,6 @@ export function create_collector(): _Collector {
         entry.logged = true
       }
     },
-    has_errors: () => queue.some(({ msg }) => msg.level === 'error'),
+    has_errors: () => hasErrors,
   }
 }

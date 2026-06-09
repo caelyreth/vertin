@@ -7,8 +7,8 @@ export interface _CapturedStderr {
   readonly restore: () => void
 }
 
-function to_array<T>(value: _Many<T>): T[] {
-  return Array.isArray(value) ? value : [value]
+function to_array<T>(value: _Many<T>): readonly T[] {
+  return Array.isArray(value) ? value : [value as T]
 }
 
 export function capture_stderr(): _CapturedStderr {

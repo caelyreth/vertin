@@ -38,6 +38,9 @@ describe('command matching', () => {
     expect(match({}, ['node', 'gitish', 'unknown'], 2)).toEqual(
       err(invalid_command(['node', 'gitish', 'unknown'], 2, 'unknown')),
     )
+    expect(match({}, ['node', 'gitish', '-'], 2)).toEqual(
+      err(invalid_command(['node', 'gitish', '-'], 2, '-')),
+    )
     expect(match({}, ['node', 'gitish'], 2)).toEqual(err(no_command_specified))
   })
 })

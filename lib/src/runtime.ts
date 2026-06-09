@@ -10,7 +10,6 @@ import type {
   _Args,
   _Commands,
   _Flags,
-  _Many,
   _Collector,
   _Message,
   _ResolverCtor,
@@ -22,6 +21,7 @@ import type {
   Resolver,
   Snippet,
 } from './types'
+import { to_array } from './utils'
 
 // MARK: - types
 
@@ -64,7 +64,7 @@ function token_error(
   markup: string,
 ): _Message {
   return error(desc, {
-    source: Array.from(argv),
+    source: argv,
     offset,
     markup,
     prefix: '> ',
@@ -75,11 +75,6 @@ function token_error(
 
 function is_flag_token(token: string | undefined): token is string {
   return token?.startsWith('-') === true && token !== '-'
-}
-
-function to_array<T>(value: _Many<T> | undefined): readonly T[] {
-  if (value === undefined) return []
-  return Array.isArray(value) ? value : [value]
 }
 
 function has_fallback(param: Argument | Flag): boolean {
@@ -166,17 +161,49 @@ function merge_params(cmd: _Commands[string]): _Params {
 
 // MARK: - flag parsing
 
-function flag_tokens(flags: _Flags): ReadonlyMap<string, string> {
+function flag_tokens(
+  flags: _Flags,
+  collector: _Collector,
+): ReadonlyMap<string, string> {
   const map = new Map<string, string>()
 
   for (const [key, flag] of Object.entries(flags)) {
-    map.set(`--${key}`, key)
+    set_flag_token(map, `--${key}`, key, collector)
+    if (flag.alias === undefined) continue
+
     for (const alias of to_array(flag.alias)) {
-      map.set(alias.length === 1 ? `-${alias}` : `--${alias}`, key)
+      set_flag_token(
+        map,
+        alias.length === 1 ? `-${alias}` : `--${alias}`,
+        key,
+        collector,
+      )
     }
   }
 
   return map
+}
+
+function set_flag_token(
+  map: Map<string, string>,
+  token: string,
+  key: string,
+  collector: _Collector,
+) {
+  const existing = map.get(token)
+
+  if (existing && existing !== key) {
+    collector.submit(
+      error('Invalid flag schema', {
+        source: token,
+        offset: 0,
+        markup: `\`${token}\` is already used by \`${existing}\``,
+      }),
+    )
+    return
+  }
+
+  map.set(token, key)
 }
 
 function split_flag(token: string): readonly [string, string | undefined] {
@@ -197,7 +224,7 @@ function parse_argv(
     unkArgs: [],
     unkFlags: [],
   }
-  const tokens = flag_tokens(flags)
+  const tokens = flag_tokens(flags, collector)
 
   for (let i = offset; i < argv.length; i++) {
     const token = argv[i]!
@@ -278,7 +305,19 @@ function parse_arg_values(
 
   for (let i = 0; i < entries.length; i++) {
     const [key, spec] = entries[i]!
-    const raw = is_array_resolver(spec.resolver)
+    const isArray = is_array_resolver(spec.resolver)
+
+    if (isArray && i < entries.length - 1) {
+      collector.submit(
+        error('Invalid argument schema', {
+          source: key,
+          offset: 0,
+          markup: `\`${key}\` with an array resolver must be the last argument`,
+        }),
+      )
+    }
+
+    const raw = isArray
       ? values.slice(offset)
       : values.slice(offset, offset + 1)
 
@@ -312,7 +351,7 @@ function parse_arg_values(
       )
     }
 
-    if (is_array_resolver(spec.resolver)) break
+    if (isArray) break
   }
 
   for (const raw of values.slice(offset)) {

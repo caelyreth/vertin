@@ -438,8 +438,8 @@ export interface _Err<E> {
  */
 export type _Result<T, E = string[]> = _Ok<T> | _Err<E>
 
-/** Utility type to make a type to include itself and its array form. */
-export type _Many<T> = T | T[]
+/** Utility type to make a type include itself and a readonly array form. */
+export type _Many<T> = T | readonly T[]
 
 /** Utility type to convert a union type to an intersection type. */
 export type _Intersect<U> = (

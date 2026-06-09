@@ -17,7 +17,7 @@ import { err, ok } from './utils'
 const SINGLE_DASH = '-'
 
 function is_flag(token: string | undefined): token is string {
-  return token?.startsWith(SINGLE_DASH) ?? false
+  return token?.startsWith(SINGLE_DASH) === true && token !== SINGLE_DASH
 }
 
 function get_own<T>(
@@ -66,7 +66,7 @@ export function match(
   }
 
   if (token) {
-    return err(invalid_command(Array.from(argv), offset, token))
+    return err(invalid_command(argv, offset, token))
   }
 
   return err(no_command_specified)

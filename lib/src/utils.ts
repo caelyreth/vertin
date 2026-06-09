@@ -107,6 +107,6 @@ export function unwrap_or<T, E>(result: _Result<T, E>, fallback: T): T {
 
 // MARK: - conversion
 
-export function to_array<T>(value: _Many<T>): T[] {
-  return Array.isArray(value) ? value : [value]
+export function to_array<T>(value: _Many<T>): readonly T[] {
+  return Array.isArray(value) ? value : [value as T]
 }

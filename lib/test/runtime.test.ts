@@ -264,6 +264,56 @@ describe('runtime context construction', () => {
     expect(collector.has_errors()).toBe(false)
   })
 
+  it('reports duplicate flag aliases without letting later flags overwrite earlier mappings', async () => {
+    const copy = cmd(
+      {
+        flags: flags({
+          output: { alias: 'o' },
+          overwrite: { alias: 'o', resolver: Boolean },
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      { sub: { copy } },
+      copy,
+      ['node', 'fs', 'copy', '-o', 'dist/app.js'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.flags).toEqual({ output: 'dist/app.js' })
+    expect(memory.descriptions()).toContain('Invalid flag schema')
+    expect(memory.text()).toContain('already used by `output`')
+  })
+
+  it('reports ambiguous positional schemas when a rest argument is not last', async () => {
+    const move = cmd(
+      {
+        args: args({
+          sources: { resolver: [String] },
+          destination: {},
+        }),
+      },
+      () => {},
+    )
+    const memory = memory_collector()
+
+    const ctx = await create_context(
+      { sub: { move } },
+      move,
+      ['node', 'fs', 'move', 'a.txt', 'b.txt', 'archive/'],
+      3,
+      memory.collector,
+    )
+
+    expect(ctx.args).toEqual({ sources: ['a.txt', 'b.txt', 'archive/'] })
+    expect(memory.descriptions()).toContain('Invalid argument schema')
+    expect(memory.text()).toContain('must be the last argument')
+  })
+
   it('supports custom resolvers and reports invalid boolean values', async () => {
     const as_date = (raw: string) => new Date(`${raw}T00:00:00.000Z`)
     const schedule = cmd(
@@ -340,7 +390,7 @@ describe('runtime context construction', () => {
           files: { resolver: [] as unknown as [StringConstructor] },
         }),
         flags: flags({
-          force: { alias: ['f', 'force'], resolver: Boolean },
+          force: { alias: ['f', 'force'] as const, resolver: Boolean },
           output: {},
         }),
       },

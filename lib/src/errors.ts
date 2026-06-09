@@ -21,7 +21,7 @@ export const no_command_specified = {
 
 /** Creates a diagnostic for an unknown command token. */
 export function invalid_command(
-  source: string[],
+  source: readonly string[],
   offset: number,
   token: string,
 ) {
