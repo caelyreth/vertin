@@ -9,14 +9,14 @@
 import path from 'node:path'
 import process from 'node:process'
 
-import { createCollector } from './collector'
+import { create_collector } from './collector'
 import { match } from './core'
 import type { App } from './types'
-import { isErr } from './utils'
+import { is_err } from './utils'
 
 // MARK: - Utilities
 
-function trimArgv(argv: readonly string[]): string[] {
+function trim_argv(argv: readonly string[]): string[] {
   const trimmedStart = argv.slice(0, 2).map((p) => path.basename(p))
   const remainingArgs = argv.slice(2)
   return [...trimmedStart, ...remainingArgs]
@@ -26,11 +26,11 @@ function trimArgv(argv: readonly string[]): string[] {
 
 /** Runs a Vertin application against the current process arguments. */
 export function run(spec: App): void {
-  const argv = trimArgv(process.argv)
-  const collector = createCollector()
+  const argv = trim_argv(process.argv)
+  const collector = create_collector()
   const matched = match(spec, argv, 2)
 
-  if (isErr(matched)) {
+  if (is_err(matched)) {
     collector.log(matched.errors)
     process.exitCode = 1
   }

@@ -8,7 +8,7 @@
  * @license MIT
  */
 
-import type { Failure, Result, Success } from './types'
+import type { _Err, _Ok, _Result } from './types'
 
 // MARK: - Result
 
@@ -17,7 +17,7 @@ import type { Failure, Result, Success } from './types'
  *
  * @param value Returned success value.
  */
-export function Ok<T>(value: T): Success<T> {
+export function ok<T>(value: T): _Ok<T> {
   return {
     success: true,
     value,
@@ -29,7 +29,7 @@ export function Ok<T>(value: T): Success<T> {
  *
  * @param errors Returned error value(s).
  */
-export function Err<E>(errors: E): Failure<E> {
+export function err<E>(errors: E): _Err<E> {
   return {
     success: false,
     errors,
@@ -37,38 +37,38 @@ export function Err<E>(errors: E): Failure<E> {
 }
 
 /**
- * Type guard to check if the result is a success (Success<T>).
+ * Type guard to check if the result is a success.
  *
  * @param result The result to check.
  */
-export function isOk<T, E>(result: Result<T, E>): result is Success<T> {
+export function is_ok<T, E>(result: _Result<T, E>): result is _Ok<T> {
   return result.success === true
 }
 
 /**
- * Type guard to check if the result is a failure (Failure<E>).
+ * Type guard to check if the result is a failure.
  *
  * @param result The result to check.
  */
-export function isErr<T, E>(result: Result<T, E>): result is Failure<E> {
+export function is_err<T, E>(result: _Result<T, E>): result is _Err<E> {
   return result.success === false
 }
 
 /**
  * Maps a function over the success value.
  *
- * If the result is Ok<T>, applies the mapper function to T to produce U,
- * returning Ok<U>. If the result is Failure<E>, returns Failure<E> unchanged.
+ * If the result is ok, applies the mapper function to its value. Otherwise,
+ * returns the error unchanged.
  *
  * @param result The result to map over.
  * @param mapper The mapping function to apply to the success value.
  */
-export function mapOk<T, E, U>(
-  result: Result<T, E>,
+export function map_ok<T, E, U>(
+  result: _Result<T, E>,
   mapper: (value: T) => U,
-): Result<U, E> {
+): _Result<U, E> {
   if (result.success) {
-    return Ok(mapper(result.value))
+    return ok(mapper(result.value))
   }
   return result
 }
@@ -76,31 +76,29 @@ export function mapOk<T, E, U>(
 /**
  * Maps a function over the error value.
  *
- * If the result is Failure<E>, applies the mapper function to E to produce F,
- * returning Failure<F>. If the result is Success<T>, returns Success<T>
- * unchanged.
+ * If the result is an error, applies the mapper function to its value.
+ * Otherwise, returns the success unchanged.
  *
  * @param result The result to map over.
  * @param mapper The mapping function to apply to the error value.
  */
-export function mapErr<T, E, F>(
-  result: Result<T, E>,
+export function map_err<T, E, F>(
+  result: _Result<T, E>,
   mapper: (errors: E) => F,
-): Result<T, F> {
+): _Result<T, F> {
   if (!result.success) {
-    return Err(mapper(result.errors)) as Failure<F>
+    return err(mapper(result.errors)) as _Err<F>
   }
   return result
 }
 
 /**
- * Returns the inner success value if the result is Ok<T>. Otherwise, returns
- * the provided default value.
+ * Returns the inner success value, or the provided fallback for errors.
  *
  * @param result The result to unwrap.
  * @param fallback The default value to return if the result is a failure.
  */
-export function unwrapOr<T, E>(result: Result<T, E>, fallback: T): T {
+export function unwrap_or<T, E>(result: _Result<T, E>, fallback: T): T {
   if (result.success) {
     return result.value
   }

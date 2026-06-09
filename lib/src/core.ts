@@ -1,34 +1,26 @@
 /**
- * @file Command matching and parameter parsing subsystem.
+ * @file Command matching subsystem.
  *
- * This file contains all core functions across the framework
- * to resolve user input into its corresponding context.
+ * This file resolves user input to the selected command context.
  *
  * @copyright Yu 2026
  * @author Yu <i@voidknot.com>
  * @license MIT
  */
 
-import { INVALID_COMMAND, NO_COMMAND_SPECIFIED } from './errors'
-import type {
-  App,
-  Command,
-  CtorDeriver,
-  FnDeriver,
-  Message,
-  Result,
-} from './types'
-import { Err, Ok } from './utils'
+import { invalid_command, no_command_specified } from './errors'
+import type { _Result, App, Command, Message } from './types'
+import { err, ok } from './utils'
 
 // MARK: - Constants & Utilities
 
 const SINGLE_DASH = '-'
 
-function isFlag(token: string | undefined): token is string {
+function is_flag(token: string | undefined): token is string {
   return token?.startsWith(SINGLE_DASH) ?? false
 }
 
-function getOwn<T>(
+function get_own<T>(
   record: Readonly<Record<string, T>> | undefined,
   key: string | undefined,
 ): T | undefined {
@@ -43,26 +35,26 @@ export function match(
   spec: App,
   argv: readonly string[],
   offset: number = 2,
-): Result<readonly [Command, number], Message> {
+): _Result<readonly [Command, number], Message> {
   let token = argv[offset]
 
-  if (isFlag(token)) {
+  if (is_flag(token)) {
     if (spec.main) {
-      return Ok([spec.main, offset])
+      return ok([spec.main, offset])
     }
-    return Err(NO_COMMAND_SPECIFIED)
+    return err(no_command_specified)
   }
 
-  const subCommand = getOwn(spec.sub, token)
+  const subCommand = get_own(spec.sub, token)
   if (subCommand) {
     let cmd = subCommand
     offset += 1
 
     while (true) {
       token = argv[offset]
-      const child = getOwn(cmd.sub, token)
+      const child = get_own(cmd.sub, token)
       if (!child) {
-        return Ok([cmd, offset])
+        return ok([cmd, offset])
       }
       cmd = child
       offset += 1
@@ -70,47 +62,12 @@ export function match(
   }
 
   if (spec.main) {
-    return Ok([spec.main, offset])
+    return ok([spec.main, offset])
   }
 
   if (token) {
-    return Err(INVALID_COMMAND(Array.from(argv), offset, token))
+    return err(invalid_command(Array.from(argv), offset, token))
   }
 
-  return Err(NO_COMMAND_SPECIFIED)
-}
-
-// MARK: - Value Resolution
-
-/** Resolves a raw value with a scalar resolver. */
-function _resolve(
-  value: string,
-  resolver: FnDeriver | CtorDeriver = String,
-): Result<unknown, string> {
-  if (resolver === String) return Ok(value)
-  if (resolver === Number) {
-    const resolved = Number(value)
-    if (Number.isNaN(resolved)) return Err(`\`${value}\` is not a valid number`)
-    return Ok(resolved)
-  }
-  if (resolver === Boolean) {
-    switch (value) {
-      case 'true':
-      case '1':
-        return Ok(true)
-      case 'false':
-      case '0':
-        return Ok(false)
-      default:
-        return Err(`\`${value}\` is not a valid boolean value`)
-    }
-  }
-
-  try {
-    return Ok(resolver(value))
-  } catch (error: unknown) {
-    return Err(
-      error instanceof Error ? error.message : `\`${value}\` is not resolvable`,
-    )
-  }
+  return err(no_command_specified)
 }

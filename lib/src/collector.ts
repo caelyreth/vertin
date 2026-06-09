@@ -11,25 +11,25 @@
 
 import process from 'node:process'
 
-import type { Formatter } from './formatter'
-import { createFormatter } from './formatter'
-import { blue, cyan, magenta, normal, rawLen, red, yellow } from './tint'
-import type { Collector, Diagnostics, Message, Plural } from './types'
+import type { _Formatter } from './formatter'
+import { create_formatter } from './formatter'
+import { blue, cyan, magenta, normal, raw_len, red, yellow } from './tint'
+import type { _Many, Collector, Diagnostics, Message } from './types'
 
 // MARK: - Internal Types
 
-interface QueuedMessage {
+interface _QueuedMessage {
   readonly msg: Message
   logged: boolean
 }
 
-function toArray<T>(value: Plural<T>): T[] {
+function to_array<T>(value: _Many<T>): T[] {
   return Array.isArray(value) ? value : [value]
 }
 
 // MARK: - Display Functions
 
-function displayGroup(heading: string, raw: Plural<string>, fmt: Formatter) {
+function display_group(heading: string, raw: _Many<string>, fmt: _Formatter) {
   fmt.indent()
 
   if (Array.isArray(raw)) {
@@ -47,12 +47,12 @@ function displayGroup(heading: string, raw: Plural<string>, fmt: Formatter) {
   fmt.shift()
 }
 
-function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
+function display_diagnostics(diag: Diagnostics, fmt: _Formatter) {
   fmt.indent()
 
   const prefix = diag.prefix ?? ''
   let sourceLine = prefix
-  let markupLine = ' '.repeat(rawLen(prefix))
+  let markupLine = ' '.repeat(raw_len(prefix))
 
   if (Array.isArray(diag.source)) {
     sourceLine += diag.source.join(' ')
@@ -87,16 +87,16 @@ function displayDiagnostics(diag: Diagnostics, fmt: Formatter) {
   fmt.shift()
 
   if (diag.expected) {
-    displayGroup(magenta.bold`Expected `, diag.expected, fmt)
+    display_group(magenta.bold`Expected `, diag.expected, fmt)
   }
 
   if (diag.hint) {
-    displayGroup(blue.bold`Hint `, diag.hint, fmt)
+    display_group(blue.bold`Hint `, diag.hint, fmt)
   }
 }
 
 function display(msg: Message, brief: boolean = false) {
-  const fmt = createFormatter()
+  const fmt = create_formatter()
   switch (msg.level) {
     case 'info':
       fmt.line(cyan`INFO ${normal`${msg.desc}`}`)
@@ -110,7 +110,7 @@ function display(msg: Message, brief: boolean = false) {
   }
 
   if (msg.diag && !brief) {
-    displayDiagnostics(msg.diag, fmt)
+    display_diagnostics(msg.diag, fmt)
   }
 
   fmt.emptyLine()
@@ -120,18 +120,18 @@ function display(msg: Message, brief: boolean = false) {
 // MARK: - Collector
 
 /** Creates a new message collector with empty queue. */
-export function createCollector(): Collector {
-  const queue: QueuedMessage[] = []
+export function create_collector(): Collector {
+  const queue: _QueuedMessage[] = []
 
   return {
     log: (msgs, brief) => {
-      for (const msg of toArray(msgs)) {
+      for (const msg of to_array(msgs)) {
         display(msg, brief)
         queue.push({ msg, logged: true })
       }
     },
     submit: (msgs) => {
-      for (const msg of toArray(msgs)) {
+      for (const msg of to_array(msgs)) {
         queue.push({ msg, logged: false })
       }
     },

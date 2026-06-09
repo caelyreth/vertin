@@ -97,7 +97,7 @@ export interface Styler {
 }
 
 /** Internal styler state carried by chained style functions. */
-interface StylerInternal extends Styler {
+interface _Styler extends Styler {
   _open: string
   _close: string
   _replacements: Record<string, string>
@@ -105,14 +105,14 @@ interface StylerInternal extends Styler {
 
 // MARK: - Env Detection
 
-function isColorSupported(): boolean {
+function is_color_supported(): boolean {
   const { env, stdout } = process
   if (env.NO_COLOR || env.NODE_DISABLE_COLORS) return false
   if (env.FORCE_COLOR) return true
   return stdout.isTTY === true
 }
 
-const ENABLED = isColorSupported()
+const ENABLED = is_color_supported()
 
 // MARK: - Once Setup
 
@@ -141,16 +141,16 @@ for (const [name, [open, close]] of Object.entries(STYLE)) {
 
 const proto = {}
 
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const escape_regex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-function isTemplateStringsArray(
+function is_template_strings_array(
   value: string | TemplateStringsArray,
 ): value is TemplateStringsArray {
   return Array.isArray(value) && 'raw' in value
 }
 
 // Factory
-function createStyler(
+function create_styler(
   open: string,
   close: string,
   regex: RegExp | null,
@@ -163,7 +163,7 @@ function createStyler(
     let text: string
     if (typeof strings === 'string' && values.length === 0) {
       text = strings
-    } else if (isTemplateStringsArray(strings)) {
+    } else if (is_template_strings_array(strings)) {
       text = strings[0]
       const len = values.length
       for (let i = 0; i < len; i++) {
@@ -182,7 +182,7 @@ function createStyler(
     }
 
     return `${open}${text}${close}`
-  } as StylerInternal
+  } as _Styler
 
   fn._open = open
   fn._close = close
@@ -192,12 +192,12 @@ function createStyler(
   return fn
 }
 
-const base = createStyler('', '', null, {})
+const base = create_styler('', '', null, {})
 
 for (const [name, { open, close }] of Object.entries(styles)) {
   Object.defineProperty(proto, name, {
     get() {
-      const parent = this as StylerInternal
+      const parent = this as _Styler
       const parentOpen = parent._open
       const parentClose = parent._close
       const parentReplacements = parent._replacements
@@ -215,10 +215,10 @@ for (const [name, { open, close }] of Object.entries(styles)) {
       const existingClose = newReplacements[closeKey] ?? closeKey
       newReplacements[closeKey] = existingClose + open
 
-      const keys = Object.keys(newReplacements).map(escapeRegex)
+      const keys = Object.keys(newReplacements).map(escape_regex)
       const regex = new RegExp(keys.join('|'), 'g')
 
-      const next = createStyler(newOpen, newClose, regex, newReplacements)
+      const next = create_styler(newOpen, newClose, regex, newReplacements)
 
       Object.defineProperty(this, name, {
         value: next,
@@ -254,7 +254,7 @@ export function strip(str: string): string {
  * @param str - The string to get the raw length of
  * @returns The raw length of the string
  */
-export function rawLen(str: string): number {
+export function raw_len(str: string): number {
   return strip(str).length
 }
 

@@ -11,15 +11,15 @@
 
 import type {
   _CommandCategoriesMap,
-  _FlagSectionsMap,
-  _ParameterMap,
+  _Args,
+  _Commands,
+  _Flags,
+  _ParamMap,
+  _SectionMap,
   _SnippetMap,
   App,
-  ArgumentRecord,
   Command,
   CommandCategory,
-  CommandRecord,
-  FlagRecord,
   FlagSection,
   Message,
   Snippet,
@@ -41,16 +41,12 @@ export function constr<T>(validator: Validator<T>): Validator<T> {
 // MARK: - Parameter
 
 /** Helper function to create a record of argument parameters. */
-export function args<const T extends ArgumentRecord & _ParameterMap<T>>(
-  record: T,
-): T {
+export function args<const T extends _Args & _ParamMap<T>>(record: T): T {
   return record
 }
 
 /** Helper function to create a record of flag parameters. */
-export function flags<const T extends FlagRecord & _ParameterMap<T>>(
-  record: T,
-): T {
+export function flags<const T extends _Flags & _ParamMap<T>>(record: T): T {
   return record
 }
 
@@ -67,10 +63,10 @@ export function snippet<const T extends Snippet & _SnippetMap<T>>(
 
 /** Helper function to create a command. */
 export function cmd<
-  const A extends ArgumentRecord & _ParameterMap<A>,
-  const F extends FlagRecord & _ParameterMap<F>,
-  const S extends FlagSection[] & _FlagSectionsMap<S, F>,
-  const C extends CommandRecord,
+  const A extends _Args & _ParamMap<A>,
+  const F extends _Flags & _ParamMap<F>,
+  const S extends FlagSection[] & _SectionMap<S, F>,
+  const C extends _Commands,
   const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,
   const P extends Snippet[],
 >(
@@ -94,7 +90,7 @@ export function cmd<
 
 /** Helper function to create an application. */
 export function app<
-  const C extends CommandRecord,
+  const C extends _Commands,
   const G extends CommandCategory[] & _CommandCategoriesMap<G, C>,
 >(
   spec: Omit<App<C, G>, 'config'> & {

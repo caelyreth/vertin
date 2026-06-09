@@ -9,8 +9,8 @@
  * @license MIT
  */
 
-/** Interface for the stateful Formatter object returned by createFormatter. */
-export interface Formatter {
+/** Interface for the stateful formatter object returned by create_formatter. */
+export interface _Formatter {
   /** Adds a line of text to the output, applying the current indentation level. */
   line: (raw: string) => void
 
@@ -31,7 +31,7 @@ export interface Formatter {
  * Creates a stateful formatter object using closures to manage indentation and
  * output.
  */
-export function createFormatter(indentUnit: string = '  '): Formatter {
+export function create_formatter(indentUnit: string = '  '): _Formatter {
   const output: string[] = []
   let level = 0
 
@@ -40,11 +40,11 @@ export function createFormatter(indentUnit: string = '  '): Formatter {
     output.push(raw)
   }
 
-  const getPrefix = (): string => indentUnit.repeat(level)
+  const get_prefix = (): string => indentUnit.repeat(level)
 
   return {
     line: (raw: string) => {
-      append(getPrefix() + raw)
+      append(get_prefix() + raw)
     },
     emptyLine: () => {
       append('')

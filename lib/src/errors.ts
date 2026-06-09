@@ -14,13 +14,13 @@ import { msg } from './helper'
 
 // MARK: - Matching Stage
 
-export const NO_COMMAND_SPECIFIED = msg({
+export const no_command_specified = msg({
   level: 'warn',
   desc: 'No command specified; nothing runs',
 })
 
 /** Creates a diagnostic for an unknown command token. */
-export function INVALID_COMMAND(
+export function invalid_command(
   source: string[],
   offset: number,
   token: string,
