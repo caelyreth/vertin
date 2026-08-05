@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { create_formatter } from '../src/renderer'
+import { create_formatter } from '@/renderer'
 
 describe('formatter', () => {
   it('builds stable indented terminal text', () => {

@@ -1,5 +1,5 @@
-import { create_collector } from '../src/collector'
-import type { _Collector, _Many, _Message } from '../src/types'
+import { create_collector } from '@/collector'
+import type { _Collector, _Many, _Message } from '@/types'
 
 export interface _CapturedStderr {
   readonly chunks: string[]

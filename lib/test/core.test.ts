@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { match } from '../src/core'
-import { invalid_command, no_command_specified } from '../src/errors'
-import { cmd } from '../src/helper'
-import { err, ok } from '../src/utils'
+import { match } from '@/core'
+import { invalid_command, no_command_specified } from '@/errors'
+import { cmd } from '@/helper'
+import { err, ok } from '@/utils'
 
 describe('command matching', () => {
   const root = cmd({}, () => {})

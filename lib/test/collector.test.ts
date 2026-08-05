@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { create_collector } from '../src/collector'
+import { create_collector } from '@/collector'
+
 import { capture_stderr } from './shared'
 
 describe('collector', () => {

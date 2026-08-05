@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { app, args, check, cmd, flags, snippet } from '../src'
+import { app, args, check, cmd, flags, snippet } from '@/index'
+
 import { capture_stderr, type _CapturedStderr } from './shared'
 
 let originalArgv: string[]

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { create_collector } from '../src/collector'
-import { args, check, cmd, flags, snippet } from '../src/helper'
-import { create_context } from '../src/runtime'
-import type { _Collector } from '../src/types'
+import { create_collector } from '@/collector'
+import { args, check, cmd, flags, snippet } from '@/helper'
+import { create_context } from '@/runtime'
+import type { _Collector } from '@/types'
+
 import { memory_collector } from './shared'
 
 function quiet_collector(): _Collector {
