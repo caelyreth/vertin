@@ -44,6 +44,21 @@ interface _ParsedArgv {
   readonly unkFlags: string[]
 }
 
+/**
+ * Immutable parse context shared by all flag-parsing helpers.
+ *
+ * Bundling the per-run inputs into one object keeps the helper signatures
+ * short, so the parse loop can reuse the same context for every token.
+ */
+interface _ParseEnv {
+  readonly argv: readonly string[]
+  readonly args: readonly Argument[]
+  readonly flags: _Flags
+  readonly tokens: ReadonlyMap<string, string>
+  readonly collector: _Collector
+  readonly tweaks: _RuntimeTweaks
+}
+
 type _RuntimeContext = HandlerContext<_Args, _Flags, Snippet[]>
 type _ResolverUnit = _ResolverFn | _ResolverCtor
 type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
@@ -149,12 +164,13 @@ function runtime_tweaks(config: AppConfig | undefined): _RuntimeTweaks {
 function resolve_unit(
   raw: string,
   resolver: _ResolverFn | _ResolverCtor = String,
-): string | number | boolean | unknown {
+): unknown {
   if (resolver === String) return raw
   if (resolver === Number) {
     const value = Number(raw)
-    if (Number.isNaN(value))
+    if (Number.isNaN(value)) {
       throw new Error(`\`${raw}\` is not a valid number`)
+    }
     return value
   }
   if (resolver === Boolean) {
@@ -326,12 +342,13 @@ function short_boolean_cluster_keys(
   tweaks: _RuntimeTweaks,
 ): readonly string[] | undefined {
   if (!tweaks.shortBooleanClusters || inline !== undefined) return undefined
-  if (name.startsWith('--') || !name.startsWith('-') || name.length <= 2)
+  if (name.startsWith('--') || !name.startsWith('-') || name.length <= 2) {
     return undefined
+  }
 
   const keys: string[] = []
 
-  for (let i = 1; i < name.length; i++) {
+  for (let i = 1; i < name.length; i += 1) {
     const key = boolean_flag_key(`-${name[i]!}`, tokens, flags)
     if (!key) return undefined
     keys.push(key)
@@ -449,7 +466,7 @@ function push_array_flag_values(
   offset: number,
   end: number,
 ) {
-  for (let i = offset; i < end; i++) {
+  for (let i = offset; i < end; i += 1) {
     const token = argv[i]!
     push_flag_value(parsed, key, token, i, token, true)
   }
@@ -464,10 +481,12 @@ function read_array_flag_values(
   args: readonly Argument[],
   tweaks: _RuntimeTweaks,
 ): number | undefined {
-  if (!tweaks.variadicFlagValues || !is_array_resolver(flag.resolver))
+  if (!tweaks.variadicFlagValues || !is_array_resolver(flag.resolver)) {
     return undefined
-  if (!can_read_as_array_value(argv[offset], flag.resolver, tweaks))
+  }
+  if (!can_read_as_array_value(argv[offset], flag.resolver, tweaks)) {
     return undefined
+  }
 
   const end =
     comma_value_end(argv, offset, flag.resolver, tweaks) ??
@@ -507,6 +526,169 @@ function read_array_flag_continuation(
   return end
 }
 
+function append_positionals(
+  parsed: _ParsedArgv,
+  env: _ParseEnv,
+  offset: number,
+): void {
+  for (let i = offset; i < env.argv.length; i += 1) {
+    parsed.args.push({
+      value: env.argv[i]!,
+      offset: i,
+      token: env.argv[i]!,
+    })
+  }
+}
+
+function unknown_flag(
+  parsed: _ParsedArgv,
+  token: string,
+  offset: number,
+  env: _ParseEnv,
+): void {
+  parsed.unkFlags.push(token)
+  env.collector.submit(
+    token_error(
+      'Unknown flag occurred',
+      env.argv,
+      offset,
+      `\`${token}\` is not a known flag`,
+    ),
+  )
+}
+
+function missing_flag_value(
+  token: string,
+  offset: number,
+  env: _ParseEnv,
+): void {
+  env.collector.submit(
+    token_error(
+      'Missing flag value',
+      env.argv,
+      offset,
+      `\`${token}\` requires a value`,
+    ),
+  )
+}
+
+function resolve_flag_key(
+  name: string,
+  inline: string | undefined,
+  env: _ParseEnv,
+): { key: string; negated: boolean } | undefined {
+  const direct = env.tokens.get(name)
+  if (direct) return { key: direct, negated: false }
+
+  const negatedKey = negated_boolean_key(
+    name,
+    inline,
+    env.tokens,
+    env.flags,
+    env.tweaks,
+  )
+  if (negatedKey) return { key: negatedKey, negated: true }
+
+  return undefined
+}
+
+function read_separate_flag_value(
+  parsed: _ParsedArgv,
+  key: string,
+  token: string,
+  flag: Flag,
+  offset: number,
+  env: _ParseEnv,
+): number {
+  if (is_boolean_resolver(flag.resolver)) {
+    push_flag_value(parsed, key, 'true', offset, token)
+    return offset
+  }
+
+  const end = read_array_flag_values(
+    parsed,
+    key,
+    flag,
+    env.argv,
+    offset + 1,
+    env.args,
+    env.tweaks,
+  )
+
+  if (end !== undefined) return end - 1
+
+  const next = env.argv[offset + 1]
+  if (!can_read_as_value(next, flag.resolver, env.tweaks)) {
+    missing_flag_value(token, offset, env)
+    return offset
+  }
+
+  push_flag_value(parsed, key, next, offset + 1, next)
+  return offset + 1
+}
+
+function parse_flag_token(
+  parsed: _ParsedArgv,
+  token: string,
+  name: string,
+  inline: string | undefined,
+  offset: number,
+  env: _ParseEnv,
+): number {
+  const resolved = resolve_flag_key(name, inline, env)
+
+  if (!resolved) {
+    const keys = short_boolean_cluster_keys(
+      name,
+      inline,
+      env.tokens,
+      env.flags,
+      env.tweaks,
+    )
+
+    if (keys) {
+      for (const clusterKey of keys) {
+        push_flag_value(parsed, clusterKey, 'true', offset, token)
+      }
+      return offset
+    }
+
+    unknown_flag(parsed, token, offset, env)
+    return offset
+  }
+
+  const { key, negated } = resolved
+  const flag = env.flags[key]!
+
+  if (negated) {
+    push_flag_value(parsed, key, 'false', offset, token)
+    return offset
+  }
+
+  if (inline !== undefined) {
+    const split =
+      env.tweaks.variadicFlagValues && is_array_resolver(flag.resolver)
+    push_flag_value(parsed, key, inline, offset, token, split)
+
+    if (split && ends_with_comma(inline)) {
+      return (
+        read_array_flag_continuation(
+          parsed,
+          key,
+          flag,
+          env.argv,
+          offset + 1,
+          env.tweaks,
+        ) - 1
+      )
+    }
+
+    return offset
+  }
+
+  return read_separate_flag_value(parsed, key, token, flag, offset, env)
+}
+
 function parse_argv(
   argv: readonly string[],
   offset: number,
@@ -521,16 +703,20 @@ function parse_argv(
     unkArgs: [],
     unkFlags: [],
   }
-  const argValues = Object.values(args)
-  const tokens = flag_tokens(flags, collector)
+  const env: _ParseEnv = {
+    argv,
+    args: Object.values(args),
+    flags,
+    tokens: flag_tokens(flags, collector),
+    collector,
+    tweaks,
+  }
 
-  for (let i = offset; i < argv.length; i++) {
+  for (let i = offset; i < argv.length; i += 1) {
     const token = argv[i]!
 
     if (token === '--') {
-      for (let j = i + 1; j < argv.length; j++) {
-        parsed.args.push({ value: argv[j]!, offset: j, token: argv[j]! })
-      }
+      append_positionals(parsed, env, i + 1)
       break
     }
 
@@ -540,111 +726,86 @@ function parse_argv(
     }
 
     const [name, inline] = split_flag(token)
-    let key = tokens.get(name)
-    let negated = false
-
-    if (!key) {
-      key = negated_boolean_key(name, inline, tokens, flags, tweaks)
-      negated = key !== undefined
-    }
-
-    if (!key) {
-      const keys = short_boolean_cluster_keys(
-        name,
-        inline,
-        tokens,
-        flags,
-        tweaks,
-      )
-
-      if (keys) {
-        for (const key of keys)
-          push_flag_value(parsed, key, 'true', i, token)
-        continue
-      }
-    }
-
-    if (!key) {
-      parsed.unkFlags.push(token)
-      collector.submit(
-        token_error(
-          'Unknown flag occurred',
-          argv,
-          i,
-          `\`${token}\` is not a known flag`,
-        ),
-      )
-      continue
-    }
-
-    const flag = flags[key]!
-
-    if (negated) {
-      push_flag_value(parsed, key, 'false', i, token)
-      continue
-    }
-
-    if (inline !== undefined) {
-      const split =
-        tweaks.variadicFlagValues && is_array_resolver(flag.resolver)
-      push_flag_value(parsed, key, inline, i, token, split)
-
-      if (split && ends_with_comma(inline)) {
-        i =
-          read_array_flag_continuation(
-            parsed,
-            key,
-            flag,
-            argv,
-            i + 1,
-            tweaks,
-          ) - 1
-      }
-
-      continue
-    }
-
-    if (is_boolean_resolver(flag.resolver)) {
-      push_flag_value(parsed, key, 'true', i, token)
-      continue
-    }
-
-    const end = read_array_flag_values(
-      parsed,
-      key,
-      flag,
-      argv,
-      i + 1,
-      argValues,
-      tweaks,
-    )
-
-    if (end !== undefined) {
-      i = end - 1
-      continue
-    }
-
-    const next = argv[i + 1]
-    if (!can_read_as_value(next, flag.resolver, tweaks)) {
-      collector.submit(
-        token_error(
-          'Missing flag value',
-          argv,
-          i,
-          `\`${token}\` requires a value`,
-        ),
-      )
-      continue
-    }
-
-    i += 1
-    push_flag_value(parsed, key, next, i, next)
+    i = parse_flag_token(parsed, token, name, inline, i, env)
   }
 
   return parsed
 }
 
 // MARK: - parameter parsing
+
+function resolver_failure(reason: unknown, fallback: string): string {
+  return reason instanceof Error ? reason.message : fallback
+}
+
+function resolve_arg_value(
+  argv: readonly string[],
+  key: string,
+  raw: _RawValue,
+  resolver: Resolver | undefined,
+  parsed: Record<string, unknown>,
+  collector: _Collector,
+): void {
+  try {
+    parsed[key] = resolve_raw(raw, resolver)
+  } catch (reason: unknown) {
+    collector.submit(
+      token_error(
+        'Invalid argument value',
+        argv,
+        raw.offset,
+        resolver_failure(reason, `\`${key}\` is invalid`),
+      ),
+    )
+  }
+}
+
+function resolve_arg_values(
+  argv: readonly string[],
+  key: string,
+  raw: readonly _RawValue[],
+  resolver: Resolver | undefined,
+  parsed: Record<string, unknown>,
+  collector: _Collector,
+): void {
+  try {
+    parsed[key] = resolve_value(raw, resolver)
+  } catch (reason: unknown) {
+    const first = raw[0]!
+    collector.submit(
+      token_error(
+        'Invalid argument value',
+        argv,
+        first.offset,
+        resolver_failure(reason, `\`${key}\` is invalid`),
+      ),
+    )
+  }
+}
+
+function apply_default(
+  key: string,
+  spec: Argument | Flag,
+  source: string,
+  requiredDefault: boolean,
+  desc: string,
+  parsed: Record<string, unknown>,
+  collector: _Collector,
+): void {
+  if (has_fallback(spec)) {
+    parsed[key] = spec.fallback
+    return
+  }
+  if (!is_required(spec, requiredDefault)) return
+
+  collector.submit(
+    error(desc, {
+      source,
+      offset: 0,
+      markup: `\`${source}\` is required`,
+    }),
+  )
+}
 
 function parse_arg_values(
   argv: readonly string[],
@@ -657,7 +818,7 @@ function parse_arg_values(
   const entries = Object.entries(specs)
   let offset = 0
 
-  for (let i = 0; i < entries.length; i++) {
+  for (let i = 0; i < entries.length; i += 1) {
     const [key, spec] = entries[i]!
     const isArray = is_array_resolver(spec.resolver)
 
@@ -672,59 +833,28 @@ function parse_arg_values(
     }
 
     if (offset >= values.length) {
-      if (has_fallback(spec)) parsed[key] = spec.fallback
-      else if (is_required(spec, true)) {
-        collector.submit(
-          error('Missing required argument', {
-            source: key,
-            offset: 0,
-            markup: `\`${key}\` is required`,
-          }),
-        )
-      }
+      apply_default(
+        key,
+        spec,
+        key,
+        true,
+        'Missing required argument',
+        parsed,
+        collector,
+      )
       continue
     }
 
     if (isArray) {
       const raw = values.slice(offset)
       offset = values.length
-
-      try {
-        parsed[key] = resolve_value(raw, spec.resolver)
-      } catch (reason: unknown) {
-        const first = raw[0]!
-        collector.submit(
-          token_error(
-            'Invalid argument value',
-            argv,
-            first.offset,
-            reason instanceof Error
-              ? reason.message
-              : `\`${key}\` is invalid`,
-          ),
-        )
-      }
-
+      resolve_arg_values(argv, key, raw, spec.resolver, parsed, collector)
       break
     }
 
     const raw = values[offset]!
     offset += 1
-
-    try {
-      parsed[key] = resolve_raw(raw, spec.resolver)
-    } catch (reason: unknown) {
-      collector.submit(
-        token_error(
-          'Invalid argument value',
-          argv,
-          raw.offset,
-          reason instanceof Error
-            ? reason.message
-            : `\`${key}\` is invalid`,
-        ),
-      )
-    }
+    resolve_arg_value(argv, key, raw, spec.resolver, parsed, collector)
   }
 
   for (const raw of values.slice(offset)) {
@@ -742,6 +872,46 @@ function parse_arg_values(
   return parsed
 }
 
+function apply_default_flag(
+  key: string,
+  spec: Flag,
+  parsed: Record<string, unknown>,
+  collector: _Collector,
+): void {
+  apply_default(
+    key,
+    spec,
+    `--${key}`,
+    false,
+    'Missing required flag',
+    parsed,
+    collector,
+  )
+}
+
+function resolve_flag_value(
+  argv: readonly string[],
+  key: string,
+  raw: readonly _RawValue[],
+  resolver: Resolver | undefined,
+  parsed: Record<string, unknown>,
+  collector: _Collector,
+): void {
+  try {
+    parsed[key] = resolve_value(raw, resolver)
+  } catch (reason: unknown) {
+    const first = raw[0]!
+    collector.submit(
+      token_error(
+        'Invalid flag value',
+        argv,
+        first.offset,
+        resolver_failure(reason, `\`--${key}\` is invalid`),
+      ),
+    )
+  }
+}
+
 function parse_flag_values(
   argv: readonly string[],
   specs: _Flags,
@@ -754,16 +924,7 @@ function parse_flag_values(
     const raw = values[key] ?? []
 
     if (raw.length === 0) {
-      if (has_fallback(spec)) parsed[key] = spec.fallback
-      else if (is_required(spec, false)) {
-        collector.submit(
-          error('Missing required flag', {
-            source: `--${key}`,
-            offset: 0,
-            markup: `\`--${key}\` is required`,
-          }),
-        )
-      }
+      apply_default_flag(key, spec, parsed, collector)
       continue
     }
 
@@ -777,21 +938,7 @@ function parse_flag_values(
       )
     }
 
-    try {
-      parsed[key] = resolve_value(raw, spec.resolver)
-    } catch (reason: unknown) {
-      const first = raw[0]!
-      collector.submit(
-        token_error(
-          'Invalid flag value',
-          argv,
-          first.offset,
-          reason instanceof Error
-            ? reason.message
-            : `\`--${key}\` is invalid`,
-        ),
-      )
-    }
+    resolve_flag_value(argv, key, raw, spec.resolver, parsed, collector)
   }
 
   return parsed
@@ -804,18 +951,27 @@ async function run_checks(
   values: Record<string, unknown>,
   collector: _Collector,
 ) {
-  for (const [key, spec] of Object.entries(specs)) {
-    if (!spec.check || values[key] === undefined) continue
+  const entries = Object.entries(specs)
 
-    try {
-      const result = await spec.check({ value: values[key] as never })
+  const results = await Promise.all(
+    entries.map(async ([key, spec]) => {
+      if (spec.check === undefined || values[key] === undefined) {
+        return undefined
+      }
 
-      if (result === true || result === undefined) continue
+      try {
+        const result = await spec.check({ value: values[key] as never })
+        return { key, result }
+      } catch (reason: unknown) {
+        return { key, result: reason }
+      }
+    }),
+  )
 
-      collector.submit(check_failed(key, result))
-    } catch (reason: unknown) {
-      collector.submit(check_failed(key, reason))
-    }
+  for (const entry of results) {
+    if (entry === undefined) continue
+    if (entry.result === true || entry.result === undefined) continue
+    collector.submit(check_failed(entry.key, entry.result))
   }
 }
 
@@ -827,11 +983,21 @@ function check_failed(key: string, reason: unknown): _Message {
   })
 }
 
+function reason_text(reason: unknown): string {
+  if (typeof reason === 'object' && reason !== null) {
+    return JSON.stringify(reason) ?? Object.prototype.toString.call(reason)
+  }
+  return String(reason)
+}
+
 function check_markup(key: string, reason: unknown): string {
   if (typeof reason === 'string' && reason.length > 0) return reason
-  if (reason instanceof Error && reason.message.length > 0)
+  if (reason instanceof Error && reason.message.length > 0) {
     return reason.message
-  if (reason !== false && reason !== undefined) return String(reason)
+  }
+  if (reason !== false && reason !== undefined) {
+    return reason_text(reason)
+  }
   return `\`${key}\` did not pass its check`
 }
 

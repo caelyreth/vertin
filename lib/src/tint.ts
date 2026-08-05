@@ -168,9 +168,10 @@ function create_styler(
     if (typeof strings === 'string' && values.length === 0) {
       text = strings
     } else if (is_template_strings_array(strings)) {
-      text = strings[0]
+      const [first] = strings
+      text = first
       const len = values.length
-      for (let i = 0; i < len; i++) {
+      for (let i = 0; i < len; i += 1) {
         text += String(values[i]) + strings[i + 1]
       }
     } else {

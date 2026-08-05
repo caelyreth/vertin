@@ -409,9 +409,45 @@ export type HandlerContext<
 }
 
 /**
- * Record type for command specifications.
+ * Any command specification that could appear in a sub-command record.
+ *
+ * The handler context is deliberately `unknown` because the exact parsed
+ * argument and flag shapes differ per command; concrete handlers remain
+ * assignable through bivariant parameter checking.
  */
-type _AnyCommand = Command<any, any, any, any>
+type _AnyCommand = {
+  /**
+   * Brief description of command.
+   */
+  readonly desc?: string
+
+  /**
+   * Arguments of the command.
+   */
+  readonly args?: _Args
+
+  /**
+   * Flags of the command.
+   */
+  readonly flags?: _Flags
+
+  /**
+   * Sub-commands of the command.
+   */
+  readonly sub?: _Commands
+
+  /**
+   * Snippets used in the command.
+   */
+  readonly use?: Snippet[]
+
+  /**
+   * Handler function of the command.
+   */
+  readonly handler: {
+    bivariance(ctx: unknown): void | Promise<void>
+  }['bivariance']
+}
 
 /**
  * Record type for command specifications.

@@ -13,12 +13,14 @@ function to_array<T>(value: _Many<T>): readonly T[] {
 
 export function capture_stderr(): _CapturedStderr {
   const chunks: string[] = []
-  const original = process.stderr.write
+  const original = process.stderr.write.bind(process.stderr)
 
-  process.stderr.write = ((chunk: string | Uint8Array) => {
+  const write: typeof process.stderr.write = (chunk) => {
     chunks.push(String(chunk))
     return true
-  }) as typeof process.stderr.write
+  }
+
+  process.stderr.write = write
 
   return {
     chunks,

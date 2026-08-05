@@ -26,6 +26,12 @@ interface _QueuedMessage {
 
 // MARK: - display
 
+type _StringSource = readonly string[]
+
+function is_array_source(source: _Many<string>): source is _StringSource {
+  return Array.isArray(source)
+}
+
 function display_group(
   heading: string,
   raw: _Many<string>,
@@ -33,7 +39,7 @@ function display_group(
 ) {
   fmt.indent()
 
-  if (Array.isArray(raw)) {
+  if (is_array_source(raw)) {
     fmt.line(heading)
 
     fmt.indent()
@@ -42,44 +48,51 @@ function display_group(
     }
     fmt.shift()
   } else {
-    fmt.line(`${heading}${raw}`)
+    fmt.line(heading + raw)
   }
 
   fmt.shift()
+}
+
+function markup_len(source: string, offset: number): number {
+  const nextSpace = source.indexOf(' ', offset)
+  return (nextSpace === -1 ? source.length : nextSpace) - offset
+}
+
+function build_string_markup(source: string, offset: number): string {
+  return ' '.repeat(offset) + '^'.repeat(markup_len(source, offset))
+}
+
+function build_array_markup(source: _StringSource, offset: number): string {
+  let markup = ''
+  const { length } = source
+
+  for (const [index, item] of source.entries()) {
+    if (index > offset) break
+
+    markup +=
+      index === offset ? '^'.repeat(item.length) : ' '.repeat(item.length)
+
+    if (index < length - 1 || index === offset) {
+      markup += ' '
+    }
+  }
+
+  return markup
 }
 
 function display_diagnostics(diag: _Diagnostics, fmt: _Formatter) {
   fmt.indent()
 
   const prefix = diag.prefix ?? ''
-  let sourceLine = prefix
-  let markupLine = ' '.repeat(raw_len(prefix))
+  const isArray = is_array_source(diag.source)
+  const sourceText = isArray ? diag.source.join(' ') : diag.source
+  const markup = isArray
+    ? build_array_markup(diag.source, diag.offset)
+    : build_string_markup(diag.source, diag.offset)
+  const markupLine = ' '.repeat(raw_len(prefix)) + markup
 
-  if (Array.isArray(diag.source)) {
-    sourceLine += diag.source.join(' ')
-    for (const [index, item] of diag.source.entries()) {
-      if (index > diag.offset) {
-        break
-      }
-
-      markupLine +=
-        index === diag.offset
-          ? '^'.repeat(item.length)
-          : ' '.repeat(item.length)
-
-      if (index < diag.source.length - 1 || index === diag.offset) {
-        markupLine += ' '
-      }
-    }
-  } else {
-    sourceLine += diag.source
-    markupLine += ' '.repeat(diag.offset)
-    const nextSpace = diag.source.indexOf(' ', diag.offset)
-    const endPos = nextSpace === -1 ? diag.source.length : nextSpace
-    markupLine += '^'.repeat(endPos - diag.offset)
-  }
-
-  fmt.line(sourceLine)
+  fmt.line(prefix + sourceText)
   if (markupLine !== '') {
     const gap = markupLine.endsWith(' ') ? '' : ' '
     fmt.line(`${markupLine}${gap}${diag.markup}`)
