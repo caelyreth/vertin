@@ -30,7 +30,9 @@ function get_own<T>(
 
 // MARK: - matching
 
-/** Resolves the command selected by the provided argv tokens. */
+/**
+ * Resolves the command selected by the provided argv tokens.
+ */
 export function match(
   spec: App,
   argv: readonly string[],

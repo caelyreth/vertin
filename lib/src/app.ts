@@ -25,7 +25,9 @@ function trim_argv(argv: readonly string[]): string[] {
 
 // MARK: - app runner
 
-/** Runs a Vertin application against the current process arguments. */
+/**
+ * Runs a Vertin application against the current process arguments.
+ */
 export async function run(spec: App): Promise<void> {
   const argv = trim_argv(process.argv)
   const collector = create_collector()

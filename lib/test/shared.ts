@@ -53,6 +53,7 @@ export function memory_collector() {
     collector,
     messages,
     descriptions: () => messages.map((msg) => msg.desc),
-    text: () => messages.map((msg) => msg.diag?.markup ?? msg.desc).join('\n'),
+    text: () =>
+      messages.map((msg) => msg.diag?.markup ?? msg.desc).join('\n'),
   }
 }

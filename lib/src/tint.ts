@@ -58,7 +58,9 @@ const STYLE = {
 
 // MARK: - types
 
-/** Styler is used to style text with ANSI escape codes. */
+/**
+ * Styler is used to style text with ANSI escape codes.
+ */
 export interface Styler {
   (text: string): string
   (strings: TemplateStringsArray, ...values: unknown[]): string
@@ -96,7 +98,9 @@ export interface Styler {
   readonly reset: Styler
 }
 
-/** Internal styler state carried by chained style functions. */
+/**
+ * Internal styler state carried by chained style functions.
+ */
 interface _Styler extends Styler {
   _open: string
   _close: string
@@ -242,6 +246,7 @@ const RE_ANSI = /\x1B\[\d+m/g
  * Strip ANSI escape codes from a string
  *
  * @param str - The string to strip ANSI escape codes from
+ *
  * @returns The string with ANSI escape codes removed
  */
 export function strip(str: string): string {
@@ -252,6 +257,7 @@ export function strip(str: string): string {
  * Get the raw length of a string, ignoring ANSI escape codes
  *
  * @param str - The string to get the raw length of
+ *
  * @returns The raw length of the string
  */
 export function raw_len(str: string): number {

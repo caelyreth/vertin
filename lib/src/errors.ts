@@ -19,7 +19,9 @@ export const no_command_specified = {
   desc: 'No command specified; nothing runs',
 } satisfies _Message
 
-/** Creates a diagnostic for an unknown command token. */
+/**
+ * Creates a diagnostic for an unknown command token.
+ */
 export function invalid_command(
   source: readonly string[],
   offset: number,

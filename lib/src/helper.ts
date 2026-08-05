@@ -23,29 +23,39 @@ import type {
   Snippet,
 } from './types'
 
-/** Helper function to create a check. */
+/**
+ * Helper function to create a check.
+ */
 export function check<T>(fn: Check<T>): Check<T> {
   return fn
 }
 
-/** Helper function to create a record of argument parameters. */
+/**
+ * Helper function to create a record of argument parameters.
+ */
 export function args<const T extends _Args & _ParamMap<T>>(record: T): T {
   return record
 }
 
-/** Helper function to create a record of flag parameters. */
+/**
+ * Helper function to create a record of flag parameters.
+ */
 export function flags<const T extends _Flags & _ParamMap<T>>(record: T): T {
   return record
 }
 
-/** Helper function to create a reusable parameter specification. */
+/**
+ * Helper function to create a reusable parameter specification.
+ */
 export function snippet<const T extends Snippet & _SnippetMap<T>>(
   records: T,
 ): T {
   return records
 }
 
-/** Helper function to create a command. */
+/**
+ * Helper function to create a command.
+ */
 export function cmd<
   const A extends _Args,
   const F extends _Flags,
@@ -66,7 +76,9 @@ export function cmd<
   }
 }
 
-/** Helper function to create an application. */
+/**
+ * Helper function to create an application.
+ */
 export function app<const C extends _Commands>(
   spec: Omit<App<C>, 'config'> & {
     readonly sub?: C

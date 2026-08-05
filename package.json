@@ -13,17 +13,24 @@
     "typecheck": "tsc"
   },
   "devDependencies": {
-    "@types/node": "catalog:types",
-    "@vitest/coverage-v8": "catalog:tooling",
-    "bumpp": "catalog:tooling",
-    "oxfmt": "catalog:tooling",
-    "oxlint": "catalog:tooling",
-    "tsdown": "catalog:tooling",
-    "typescript": "catalog:tooling",
-    "vitest": "catalog:tooling"
+    "@types/node": "catalog:t",
+    "@vitest/coverage-v8": "catalog:x",
+    "bumpp": "catalog:x",
+    "oxfmt": "catalog:x",
+    "oxlint": "catalog:x",
+    "oxlint-tsgolint": "catalog:x",
+    "tsdown": "catalog:x",
+    "vitest": "catalog:x"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.20.0",
+      "onFail": "warn"
+    }
   },
   "engines": {
     "node": ">=22.18.0"
   },
-  "packageManager": "pnpm@11.5.2"
+  "packageManager": "pnpm@11.20.0"
 }

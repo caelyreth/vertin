@@ -11,9 +11,9 @@ describe('command matching', () => {
   const push = cmd({ sub: { commit } }, () => {})
 
   it('uses main command when input starts with a flag', () => {
-    expect(match({ main: root }, ['node', 'gitish', '--version'], 2)).toEqual(
-      ok([root, 2]),
-    )
+    expect(
+      match({ main: root }, ['node', 'gitish', '--version'], 2),
+    ).toEqual(ok([root, 2]))
   })
 
   it('reports a flag-only invocation when no main command exists', () => {
@@ -24,7 +24,11 @@ describe('command matching', () => {
 
   it('matches nested subcommands and returns the remaining argv offset', () => {
     expect(
-      match({ sub: { push } }, ['node', 'gitish', 'push', 'commit', 'src'], 2),
+      match(
+        { sub: { push } },
+        ['node', 'gitish', 'push', 'commit', 'src'],
+        2,
+      ),
     ).toEqual(ok([commit, 4]))
   })
 
@@ -41,6 +45,8 @@ describe('command matching', () => {
     expect(match({}, ['node', 'gitish', '-'], 2)).toEqual(
       err(invalid_command(['node', 'gitish', '-'], 2, '-')),
     )
-    expect(match({}, ['node', 'gitish'], 2)).toEqual(err(no_command_specified))
+    expect(match({}, ['node', 'gitish'], 2)).toEqual(
+      err(no_command_specified),
+    )
   })
 })

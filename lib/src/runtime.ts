@@ -135,7 +135,8 @@ function runtime_tweaks(config: AppConfig | undefined): _RuntimeTweaks {
   if (!tweaks) return default_tweaks
 
   return {
-    booleanNegation: tweaks.booleanNegation ?? default_tweaks.booleanNegation,
+    booleanNegation:
+      tweaks.booleanNegation ?? default_tweaks.booleanNegation,
     shortBooleanClusters:
       tweaks.shortBooleanClusters ?? default_tweaks.shortBooleanClusters,
     variadicFlagValues:
@@ -152,7 +153,8 @@ function resolve_unit(
   if (resolver === String) return raw
   if (resolver === Number) {
     const value = Number(raw)
-    if (Number.isNaN(value)) throw new Error(`\`${raw}\` is not a valid number`)
+    if (Number.isNaN(value))
+      throw new Error(`\`${raw}\` is not a valid number`)
     return value
   }
   if (resolver === Boolean) {
@@ -175,7 +177,10 @@ function resolve_value(
   return resolve_unit(raw[raw.length - 1]!.value, resolver_unit(resolver))
 }
 
-function resolve_raw(raw: _RawValue, resolver: Resolver | undefined): unknown {
+function resolve_raw(
+  raw: _RawValue,
+  resolver: Resolver | undefined,
+): unknown {
   return resolve_unit(raw.value, resolver_unit(resolver))
 }
 
@@ -368,7 +373,8 @@ function can_read_as_array_value(
 
   const values = split_array_value(token)
   return (
-    values.length > 0 && values.every((value) => !Number.isNaN(Number(value)))
+    values.length > 0 &&
+    values.every((value) => !Number.isNaN(Number(value)))
   )
 }
 
@@ -376,7 +382,10 @@ function ends_with_comma(value: string): boolean {
   return value.trimEnd().endsWith(',')
 }
 
-function required_args_left(args: readonly Argument[], used: number): number {
+function required_args_left(
+  args: readonly Argument[],
+  used: number,
+): number {
   let consumed = used
   let required = 0
 
@@ -549,7 +558,8 @@ function parse_argv(
       )
 
       if (keys) {
-        for (const key of keys) push_flag_value(parsed, key, 'true', i, token)
+        for (const key of keys)
+          push_flag_value(parsed, key, 'true', i, token)
         continue
       }
     }
@@ -581,8 +591,14 @@ function parse_argv(
 
       if (split && ends_with_comma(inline)) {
         i =
-          read_array_flag_continuation(parsed, key, flag, argv, i + 1, tweaks) -
-          1
+          read_array_flag_continuation(
+            parsed,
+            key,
+            flag,
+            argv,
+            i + 1,
+            tweaks,
+          ) - 1
       }
 
       continue
@@ -682,7 +698,9 @@ function parse_arg_values(
             'Invalid argument value',
             argv,
             first.offset,
-            reason instanceof Error ? reason.message : `\`${key}\` is invalid`,
+            reason instanceof Error
+              ? reason.message
+              : `\`${key}\` is invalid`,
           ),
         )
       }
@@ -701,7 +719,9 @@ function parse_arg_values(
           'Invalid argument value',
           argv,
           raw.offset,
-          reason instanceof Error ? reason.message : `\`${key}\` is invalid`,
+          reason instanceof Error
+            ? reason.message
+            : `\`${key}\` is invalid`,
         ),
       )
     }
@@ -766,7 +786,9 @@ function parse_flag_values(
           'Invalid flag value',
           argv,
           first.offset,
-          reason instanceof Error ? reason.message : `\`--${key}\` is invalid`,
+          reason instanceof Error
+            ? reason.message
+            : `\`--${key}\` is invalid`,
         ),
       )
     }
@@ -839,7 +861,12 @@ export async function create_context(
     parsed.unkArgs,
     collector,
   )
-  const flags = parse_flag_values(argv, params.flags, parsed.flags, collector)
+  const flags = parse_flag_values(
+    argv,
+    params.flags,
+    parsed.flags,
+    collector,
+  )
 
   await run_checks(params.args, args, collector)
   await run_checks(params.flags, flags, collector)

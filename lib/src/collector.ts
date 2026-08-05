@@ -26,7 +26,11 @@ interface _QueuedMessage {
 
 // MARK: - display
 
-function display_group(heading: string, raw: _Many<string>, fmt: _Formatter) {
+function display_group(
+  heading: string,
+  raw: _Many<string>,
+  fmt: _Formatter,
+) {
   fmt.indent()
 
   if (Array.isArray(raw)) {
@@ -116,7 +120,9 @@ function display(msg: _Message, brief: boolean = false) {
 
 // MARK: - collector
 
-/** Creates a new message collector with empty queue. */
+/**
+ * Creates a new message collector with empty queue.
+ */
 export function create_collector(): _Collector {
   const queue: _QueuedMessage[] = []
   let hasErrors = false

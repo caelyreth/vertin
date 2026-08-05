@@ -1,9 +1,15 @@
 import { defineConfig } from 'oxfmt'
 
 export default defineConfig({
-  printWidth: 80,
+  printWidth: 76,
   semi: false,
   singleQuote: true,
-  jsdoc: true,
   sortImports: true,
+  quoteProps: 'consistent',
+  sortPackageJson: true,
+  jsdoc: {
+    commentLineStrategy: 'multiline',
+    preferCodeFences: true,
+    separateReturnsFromParam: true,
+  },
 })

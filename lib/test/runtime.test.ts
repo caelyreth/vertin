@@ -35,7 +35,11 @@ describe('runtime context construction', () => {
           revision: { resolver: Number },
         }),
         flags: flags({
-          include: { alias: 'i', resolver: [String], fallback: [] as string[] },
+          include: {
+            alias: 'i',
+            resolver: [String],
+            fallback: [] as string[],
+          },
           retries: {
             resolver: Number,
             fallback: 1,
@@ -164,7 +168,9 @@ describe('runtime context construction', () => {
 
     expect(missingCtx.args).toEqual({ kind: 'app' })
     expect(missingMemory.collector.has_errors()).toBe(true)
-    expect(missingMemory.descriptions()).toContain('Missing required argument')
+    expect(missingMemory.descriptions()).toContain(
+      'Missing required argument',
+    )
 
     const audit = cmd(
       {
@@ -353,7 +359,11 @@ describe('runtime context construction', () => {
         }),
         flags: flags({
           number: { resolver: [Number], fallback: [] as number[] },
-          label: { alias: 'l', resolver: [String], fallback: [] as string[] },
+          label: {
+            alias: 'l',
+            resolver: [String],
+            fallback: [] as string[],
+          },
         }),
       },
       () => {},
@@ -668,8 +678,8 @@ describe('runtime context construction', () => {
         flags: flags({
           '': {},
           '-bad': {},
-          debug: { alias: ['', '-d'] as const, resolver: Boolean },
-          good: { alias: 'g', resolver: Boolean },
+          'debug': { alias: ['', '-d'] as const, resolver: Boolean },
+          'good': { alias: 'g', resolver: Boolean },
         }),
       },
       () => {},
@@ -687,7 +697,10 @@ describe('runtime context construction', () => {
     expect(ctx.flags).toEqual({ good: true })
     expect(ctx.unkFlags).toEqual(['-d'])
     expect(memory.descriptions()).toEqual(
-      expect.arrayContaining(['Invalid flag schema', 'Unknown flag occurred']),
+      expect.arrayContaining([
+        'Invalid flag schema',
+        'Unknown flag occurred',
+      ]),
     )
     expect(memory.text()).toContain('Flag name must not be empty')
     expect(memory.text()).toContain('Alias for `debug`')
@@ -843,6 +856,8 @@ describe('runtime context construction', () => {
       'Missing flag value',
       'Invalid argument value',
     ])
-    expect(memory.text()).toContain('Array resolver must contain a resolver')
+    expect(memory.text()).toContain(
+      'Array resolver must contain a resolver',
+    )
   })
 })
