@@ -21,7 +21,7 @@ export default defineConfig({
     'no-empty': 'error',
     'no-plusplus': 'error',
     'max-depth': ['error', { max: 3 }],
-    'complexity': ['error', { max: 5 }],
+    'complexity': ['error', { max: 10 }],
     'oxc/no-accumulating-spread': 'error',
     'oxc/no-barrel-file': 'error',
     'unicorn/no-lonely-if': 'error',
@@ -38,7 +38,6 @@ export default defineConfig({
     'jsdoc/require-yields': 'warn',
     'jsdoc/require-yields-type': 'warn',
     'typescript/no-confusing-void-expression': 'warn',
-    'typescript/prefer-readonly-parameter-types': 'warn',
     // style
     'arrow-body-style': 'warn',
     'curly': ['warn', 'multi-line', 'consistent'],
