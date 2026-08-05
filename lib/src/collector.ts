@@ -5,7 +5,7 @@
  * internal to Vertin runtime and rendering.
  *
  * @copyright Yu 2026
- * @author Yu <i@voidknot.com>
+ * @author Yu <me@iki.moe>
  * @license MIT
  */
 

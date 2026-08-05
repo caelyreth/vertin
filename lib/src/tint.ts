@@ -11,7 +11,7 @@
  * directly with Vertin.
  *
  * @copyright Yu 2026
- * @author Yu <i@voidknot.com>
+ * @author Yu <me@iki.moe>
  * @license MIT (Inherited from @uttr/tint)
  */
 

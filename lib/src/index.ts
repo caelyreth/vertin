@@ -2,7 +2,7 @@
  * @file Public package surface.
  *
  * @copyright Yu 2026
- * @author Yu <i@voidknot.com>
+ * @author Yu <me@iki.moe>
  * @license MIT
  */
 

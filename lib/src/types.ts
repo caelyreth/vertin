@@ -5,7 +5,7 @@
  * exported for inference support and are not intended for direct user code.
  *
  * @copyright Yu 2026
- * @author Yu <i@voidknot.com>
+ * @author Yu <me@iki.moe>
  * @license MIT
  */
 

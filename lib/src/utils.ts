@@ -4,7 +4,7 @@
  * This file contains all utility functions across the framework Vertin.
  *
  * @copyright Yu 2026
- * @author Yu <i@voidknot.com>
+ * @author Yu <me@iki.moe>
  * @license MIT
  */
 

@@ -2,7 +2,7 @@
  * @file Runtime entry point for Vertin applications.
  *
  * @copyright Yu 2026
- * @author Yu <i@voidknot.com>
+ * @author Yu <me@iki.moe>
  * @license MIT
  */
 
