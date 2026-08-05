@@ -6,12 +6,12 @@
     "args",
     "cli"
   ],
-  "homepage": "https://github.com/utakotoba/vertin#readme",
+  "homepage": "https://github.com/caelyreth/vertin#readme",
   "license": "MIT",
   "author": "Yu <me@iki.moe>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/utakotoba/vertin.git",
+    "url": "git+https://github.com/caelyreth/vertin.git",
     "directory": "packages/vertin"
   },
   "files": [

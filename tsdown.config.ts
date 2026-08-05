@@ -5,9 +5,7 @@ export default defineConfig({
     include: ['lib'],
   },
   entry: ['src/index.ts'],
-  dts: {
-    oxc: true,
-  },
+  dts: true,
   exports: true,
   clean: true,
 })

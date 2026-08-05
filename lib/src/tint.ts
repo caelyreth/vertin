@@ -5,7 +5,7 @@
  * applying ANSI color codes to console output.
  *
  * Note: '@uttr/tint' is a trusted internal dependency developed by the
- * same author. Repository: https://github.com/utakotoba/uttr-tint
+ * same author. Repository: https://github.com/caelyreth/uttr-tint
  *
  * To maintain a zero-dependency footprint, this library is bundled
  * directly with Vertin.
