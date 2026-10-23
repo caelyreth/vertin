@@ -1053,6 +1053,7 @@ export async function create_context(
   input: {
     readonly flags?: _Flags
     readonly commands?: readonly number[]
+    readonly help?: boolean
   } = {},
 ): Promise<_RuntimeContext> {
   const params = merge_params(cmd)
@@ -1072,6 +1073,15 @@ export async function create_context(
     tweaks,
     input.commands,
   )
+  if (input.help && parsed.args.length === 0) {
+    return {
+      args: {},
+      flags: {},
+      unkArgs: parsed.unkArgs,
+      unkFlags: parsed.unkFlags,
+      __internal__: { app },
+    }
+  }
   const args = parse_arg_values(
     argv,
     params.args,

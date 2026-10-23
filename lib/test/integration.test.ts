@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 
 import { app, args, check, cmd, flags, snippet } from '@/index'
 
-import { capture_stderr, set_argv, type _CapturedStderr } from './shared'
+import { capture_stderr, set_argv, type _CapturedOutput } from './shared'
 
 let originalArgv: string[]
 let originalExitCode: typeof process.exitCode
-let stderr: _CapturedStderr
+let stderr: _CapturedOutput
 
 beforeEach(() => {
   originalArgv = [...Bun.argv]

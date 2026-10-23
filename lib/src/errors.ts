@@ -12,11 +12,6 @@ import type { _Message } from './types'
 
 // MARK: - matching stage
 
-export const no_command_specified = {
-  level: 'warn',
-  desc: 'No command specified; nothing runs',
-} satisfies _Message
-
 /**
  * Creates a diagnostic for an unknown command token.
  */

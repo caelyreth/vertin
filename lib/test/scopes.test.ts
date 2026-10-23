@@ -34,7 +34,7 @@ describe('flag scopes', () => {
       )
       const cli = app({ flags: common.flags, sub: { remote } })
       const result = await invoke_app(cli, argv)
-      expect(result).toEqual({ stderr: '', exitCode: 0 })
+      expect(result).toEqual({ stdout: '', stderr: '', exitCode: 0 })
       expect(received).toEqual({
         name: 'origin',
         verbose: true,

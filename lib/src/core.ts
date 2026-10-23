@@ -5,7 +5,7 @@
  * @copyright Yu 2026
  */
 
-import { invalid_command, no_command_specified } from './errors'
+import { invalid_command } from './errors'
 import {
   extend_flags,
   flag_names,
@@ -245,6 +245,10 @@ export function match(
   const end = match_subcommands(spec, argv, offset, route)
   if (is_err(end)) return end
   if (route.cmd) {
+    const token = argv[end.value]
+    if (!route.cmd.handler && token && !is_flag(token)) {
+      return err(invalid_command(argv, end.value, token))
+    }
     return ok({
       cmd: route.cmd,
       offset: end.value,
@@ -280,5 +284,11 @@ function match_main(
   if (token && !is_flag(token)) {
     return err(invalid_command(argv, offset, token))
   }
-  return err(no_command_specified)
+  return ok({
+    cmd: { desc: spec.desc, sub: spec.sub },
+    offset,
+    path: [],
+    commands,
+    flags: spec.flags ?? {},
+  })
 }

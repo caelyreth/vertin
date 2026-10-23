@@ -2,7 +2,7 @@ import { run } from '@/app'
 import { create_collector } from '@/collector'
 import type { _Collector, _Many, _Message, App } from '@/types'
 
-export interface _CapturedStderr {
+export interface _CapturedOutput {
   readonly chunks: string[]
   readonly text: () => string
   readonly restore: () => void
@@ -16,39 +16,51 @@ export function set_argv(argv: readonly string[]): void {
   Bun.argv.splice(0, Bun.argv.length, ...argv)
 }
 
-export function capture_stderr(): _CapturedStderr {
+function capture_output(
+  stream: Pick<typeof process.stdout, 'write'>,
+): _CapturedOutput {
   const chunks: string[] = []
-  const original = process.stderr.write.bind(process.stderr)
+  const original = stream.write.bind(stream)
 
-  const write: typeof process.stderr.write = (chunk) => {
+  const write: typeof stream.write = (chunk) => {
     chunks.push(String(chunk))
     return true
   }
 
-  process.stderr.write = write
+  stream.write = write
 
   return {
     chunks,
     text: () => chunks.join(''),
     restore: () => {
-      process.stderr.write = original
+      stream.write = original
     },
   }
+}
+
+export function capture_stderr(): _CapturedOutput {
+  return capture_output(process.stderr)
 }
 
 export async function invoke_app(spec: App, argv: readonly string[]) {
   const originalArgv = [...Bun.argv]
   const originalExitCode = process.exitCode
   const stderr = capture_stderr()
+  const stdout = capture_output(process.stdout)
   try {
     set_argv(['bun', 'tool', ...argv])
     process.exitCode = 0
     await run(spec)
-    return { stderr: stderr.text(), exitCode: process.exitCode }
+    return {
+      stdout: stdout.text(),
+      stderr: stderr.text(),
+      exitCode: process.exitCode,
+    }
   } finally {
     set_argv(originalArgv)
     process.exitCode = originalExitCode ?? 0
     stderr.restore()
+    stdout.restore()
   }
 }
 

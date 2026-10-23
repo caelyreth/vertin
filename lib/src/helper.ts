@@ -66,7 +66,7 @@ export function cmd<
     readonly sub?: C
     readonly use?: P
   },
-  handler: Command<A, F, C, P>['handler'],
+  handler?: Command<A, F, C, P>['handler'],
 ): Command<A, F, C, P> {
   return {
     ...spec,

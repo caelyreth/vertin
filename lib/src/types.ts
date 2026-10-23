@@ -465,7 +465,7 @@ type _AnyCommand = {
   /**
    * Handler function of the command.
    */
-  readonly handler: {
+  readonly handler?: {
     bivariance(ctx: unknown): void | Promise<void>
   }['bivariance']
 }
@@ -519,9 +519,10 @@ export interface Command<
   readonly use?: P
 
   /**
-   * Handler function of the command.
+   * Handler function of the command. Omit it for a command group whose
+   * default action is to display generated help.
    */
-  readonly handler: _Handler<A, F, P>
+  readonly handler?: _Handler<A, F, P>
 }
 
 // MARK: - app

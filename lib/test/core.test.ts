@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import { match } from '@/core'
-import { invalid_command, no_command_specified } from '@/errors'
+import { invalid_command } from '@/errors'
 import { cmd } from '@/helper'
 import { err } from '@/utils'
 
@@ -16,10 +16,11 @@ describe('command matching', () => {
     ).toMatchObject({ success: true, value: { cmd: root, offset: 2 } })
   })
 
-  it('reports a flag-only invocation when no main command exists', () => {
-    expect(match({}, ['bun', 'gitish', '--version'], 2)).toEqual(
-      err(no_command_specified),
-    )
+  it('returns a root group when no main command exists', () => {
+    expect(match({}, ['bun', 'gitish', '--version'], 2)).toMatchObject({
+      success: true,
+      value: { path: [], flags: {} },
+    })
   })
 
   it('matches nested subcommands and returns the remaining argv offset', () => {
@@ -53,8 +54,9 @@ describe('command matching', () => {
     expect(match({}, ['bun', 'gitish', '-'], 2)).toEqual(
       err(invalid_command(['bun', 'gitish', '-'], 2, '-')),
     )
-    expect(match({}, ['bun', 'gitish'], 2)).toEqual(
-      err(no_command_specified),
-    )
+    expect(match({}, ['bun', 'gitish'], 2)).toMatchObject({
+      success: true,
+      value: { path: [] },
+    })
   })
 })

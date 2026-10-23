@@ -7,6 +7,7 @@
 
 import { create_collector } from './collector'
 import { match } from './core'
+import { help_text } from './help'
 import { create_context } from './runtime'
 import type { _Message, App } from './types'
 import { is_err } from './utils'
@@ -41,11 +42,19 @@ export async function run(spec: App): Promise<void> {
   const ctx = await create_context(spec, cmd, argv, 2, collector, {
     flags,
     commands,
+    help: cmd.handler === undefined,
   })
 
   collector.collect()
   if (collector.has_errors()) {
     process.exitCode = 1
+    return
+  }
+
+  if (!cmd.handler) {
+    process.stdout.write(
+      help_text(spec, cmd, matched.value.path, flags, argv[1] ?? ''),
+    )
     return
   }
 
