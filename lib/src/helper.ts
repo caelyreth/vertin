@@ -9,10 +9,11 @@
 
 import { run as run_app } from './app'
 import type {
-  _Args,
+  _ArgsInput,
   _Commands,
-  _Flags,
-  _ParamMap,
+  _FlagsInput,
+  _ParamGuard,
+  _SnippetInput,
   _SnippetMap,
   App,
   Check,
@@ -29,24 +30,30 @@ export function check<T>(fn: Check<T>): Check<T> {
 }
 
 /**
- * Helper function to create a record of argument parameters.
+ * Creates a reusable argument record. Inline `cmd` records use the same
+ * inference and validation; this helper is optional.
  */
-export function args<const T extends _Args & _ParamMap<T>>(record: T): T {
+export function args<const T extends _ArgsInput>(
+  record: T & _ArgsInput & NoInfer<_ParamGuard<T>>,
+): T {
   return record
 }
 
 /**
- * Helper function to create a record of flag parameters.
+ * Creates a reusable flag record. Inline `cmd` and `app` records use the
+ * same inference and validation; this helper is optional.
  */
-export function flags<const T extends _Flags & _ParamMap<T>>(record: T): T {
+export function flags<const T extends _FlagsInput>(
+  record: T & _FlagsInput & NoInfer<_ParamGuard<T>>,
+): T {
   return record
 }
 
 /**
  * Helper function to create a reusable parameter specification.
  */
-export function snippet<const T extends Snippet & _SnippetMap<T>>(
-  records: T,
+export function snippet<const T extends _SnippetInput>(
+  records: T & _SnippetInput & NoInfer<_SnippetMap<T>>,
 ): T {
   return records
 }
@@ -55,18 +62,18 @@ export function snippet<const T extends Snippet & _SnippetMap<T>>(
  * Helper function to create a command.
  */
 export function cmd<
-  const A extends _Args = {},
-  const F extends _Flags = {},
+  const A extends _ArgsInput = {},
+  const F extends _FlagsInput = {},
   const C extends _Commands = {},
   const P extends Snippet[] = [],
 >(
-  spec: Omit<Command<A, F, C, P>, 'handler'> & {
-    readonly args?: A
-    readonly flags?: F
+  spec: Omit<Command<A, F, C, P>, 'handler' | 'args' | 'flags'> & {
+    readonly args?: A & _ArgsInput & NoInfer<_ParamGuard<A>>
+    readonly flags?: F & _FlagsInput & NoInfer<_ParamGuard<F>>
     readonly sub?: C
     readonly use?: P
   },
-  handler?: Command<A, F, C, P>['handler'],
+  handler?: NoInfer<Command<A, F, C, P>['handler']>,
 ): Command<A, F, C, P> {
   return {
     ...spec,
@@ -77,16 +84,20 @@ export function cmd<
 /**
  * Helper function to create an application.
  */
-export function app<const C extends _Commands>(
-  spec: Omit<App<C>, 'config'> & {
+export function app<
+  const C extends _Commands = {},
+  const F extends _FlagsInput = {},
+>(
+  spec: Omit<App<C, F>, 'config' | 'flags'> & {
     readonly sub?: C
+    readonly flags?: F & _FlagsInput & NoInfer<_ParamGuard<F>>
   },
-  config?: App<C>['config'],
-): RunnableApp<C> {
+  config?: App<C, F>['config'],
+): RunnableApp<C, F> {
   const created = {
     ...spec,
     config,
-  } as App<C>
+  } as App<C, F>
   return {
     ...created,
     run: () => run_app(created),

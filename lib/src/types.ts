@@ -196,6 +196,8 @@ export type Check<T> = {
   bivariance(ctx: CheckContext<T>): _CheckResult | Promise<_CheckResult>
 }['bivariance']
 
+type _Fallback<T> = T extends readonly unknown[] ? Readonly<T> : T
+
 // MARK: - parameter
 
 /**
@@ -226,7 +228,7 @@ interface _Param<T extends Resolver = Resolver> {
   /**
    * Fallback value if parameter field omitted.
    */
-  readonly fallback?: _Resolve<T>
+  readonly fallback?: _Fallback<_Resolve<T>>
 
   /**
    * Whether the parameter must be provided when no fallback exists.
@@ -272,6 +274,21 @@ export type _Args = Record<string, Argument>
  */
 export type _Flags = Record<string, Flag>
 
+/**
+ * Concrete authoring shapes supply property completion and a string context
+ * for resolver callbacks. Constructors remain callable here; the inferred
+ * specification retains their exact types for `_Resolve`.
+ */
+type _ResolverInput = _ResolverFn | readonly _ResolverFn[]
+export type _ArgsInput = Record<
+  string,
+  Omit<Argument, 'resolver'> & { readonly resolver?: _ResolverInput }
+>
+export type _FlagsInput = Record<
+  string,
+  Omit<Flag, 'resolver'> & { readonly resolver?: _ResolverInput }
+>
+
 // MARK: - parsed parameter
 
 /**
@@ -287,24 +304,36 @@ export type _ResolverOf<T extends _Param> = T['resolver'] extends Resolver
 /**
  * Utility type to map a parameter record to a parameter map.
  *
- * Used to implement spec-level inference.
+ * Validates an inferred record without erasing its literal metadata.
  *
  * @private
  */
 export type _ParamMap<T extends Record<string, _Param>> = {
-  [K in keyof T]: Omit<T[K], 'fallback' | 'check' | 'choices'> & {
+  [K in keyof T]: T[K] & {
     choices?: readonly NoInfer<_ChoiceOf<_ResolverOf<T[K]>>>[]
-    fallback?: NoInfer<_ValueOf<T[K]>>
+    fallback?: NoInfer<_Fallback<_ValueOf<T[K]>>>
     check?: Check<NoInfer<_ValueOf<T[K]>>>
   }
 }
 
+/**
+ * Apply dependent validation after inference. Open contextual records do
+ * not yet have concrete resolvers; evaluating them as String would
+ * interfere with both callback inference and editor completion.
+ */
+export type _ParamGuard<T extends Record<string, _Param>> =
+  string extends keyof T
+    ? unknown
+    : T extends _ParamMap<T>
+      ? unknown
+      : _ParamMap<T>
+
 type _ValueOf<T extends _Param> = T extends {
-  readonly choices: readonly (infer U)[]
+  readonly choices: readonly unknown[]
 }
   ? _Resolve<_ResolverOf<T>> extends readonly unknown[]
-    ? Extract<U, _ChoiceOf<_ResolverOf<T>>>[]
-    : Extract<U, _ChoiceOf<_ResolverOf<T>>>
+    ? Extract<T['choices'][number], _ChoiceOf<_ResolverOf<T>>>[]
+    : Extract<T['choices'][number], _ChoiceOf<_ResolverOf<T>>>
   : _Resolve<_ResolverOf<T>>
 
 type _Required<T extends _Param, D extends boolean> = T extends {
@@ -316,7 +345,7 @@ type _Required<T extends _Param, D extends boolean> = T extends {
   : D
 
 type _ParsedParam<T extends _Param, D extends boolean> =
-  T['fallback'] extends _ValueOf<T>
+  T['fallback'] extends _Fallback<_ValueOf<T>>
     ? _ValueOf<T>
     : _Required<T, D> extends infer R
       ? R extends true
@@ -391,12 +420,17 @@ export interface Snippet<
   readonly flags?: F
 }
 
+export interface _SnippetInput {
+  readonly args?: _ArgsInput
+  readonly flags?: _FlagsInput
+}
+
 /**
  * Utility type to preserve snippet-level inference.
  */
-export type _SnippetMap<T extends Snippet> = Snippet & {
-  flags?: _Flags & _ParamMap<NonNullable<T['flags']>>
-  args?: _Args & _ParamMap<NonNullable<T['args']>>
+export type _SnippetMap<T extends Snippet> = {
+  readonly args?: _ParamGuard<NonNullable<T['args']>>
+  readonly flags?: _ParamGuard<NonNullable<T['flags']>>
 }
 
 // MARK: - command
@@ -605,7 +639,10 @@ export interface AppConfig {
 /**
  * Application specification.
  */
-export interface App<C extends _Commands = _Commands> {
+export interface App<
+  C extends _Commands = _Commands,
+  F extends _Flags = _Flags,
+> {
   /**
    * Brief description of the app.
    */
@@ -621,7 +658,7 @@ export interface App<C extends _Commands = _Commands> {
    * inherited by descendants; positional arguments remain local. Reuse a
    * snippet in a command for inference of shared flag values.
    */
-  readonly flags?: _Flags
+  readonly flags?: F
 
   /**
    * Main command of the app. Its flags join the root scope and are
@@ -645,7 +682,8 @@ export interface App<C extends _Commands = _Commands> {
  */
 export interface RunnableApp<
   C extends _Commands = _Commands,
-> extends App<C> {
+  F extends _Flags = _Flags,
+> extends App<C, F> {
   /**
    * Runs the application against the current process arguments.
    */
