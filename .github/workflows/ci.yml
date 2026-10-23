@@ -28,10 +28,7 @@ jobs:
       - name: Check formatting
         run: bun run fmt:check
 
-      - name: Typecheck
-        run: bun run typecheck
-
-      - name: Lint
+      - name: Lint and typecheck
         run: bun run lint
 
       - name: Test with coverage

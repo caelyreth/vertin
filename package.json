@@ -15,8 +15,7 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "test": "bun test",
-    "test:coverage": "bun test --coverage",
-    "typecheck": "tsc"
+    "test:coverage": "bun test --coverage"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",
@@ -24,8 +23,7 @@
     "oxfmt": "^0.74.0",
     "oxlint": "^1.89.0",
     "oxlint-tsgolint": "^7.0.2005",
-    "tsdown": "^0.23.1",
-    "typescript": "^7.0.2"
+    "tsdown": "^0.23.1"
   },
   "engines": {
     "bun": ">=1.4.2"
