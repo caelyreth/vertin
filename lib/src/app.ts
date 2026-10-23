@@ -37,8 +37,11 @@ export async function run(spec: App): Promise<void> {
     return
   }
 
-  const [cmd, offset] = matched.value
-  const ctx = await create_context(spec, cmd, argv, offset, collector)
+  const { cmd, flags, commands } = matched.value
+  const ctx = await create_context(spec, cmd, argv, 2, collector, {
+    flags,
+    commands,
+  })
 
   collector.collect()
   if (collector.has_errors()) {

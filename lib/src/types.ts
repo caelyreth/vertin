@@ -359,6 +359,7 @@ export interface _Parsed<
    * Parsed flags.
    */
   readonly flags: _ParsedFlags<NonNullable<F>> &
+    Readonly<Record<string, unknown>> &
     _Merge<{
       [K in keyof P]: _ParsedFlags<NonNullable<P[K]['flags']>>
     }>
@@ -588,6 +589,13 @@ export interface App<C extends _Commands = _Commands> {
    * Version of the app.
    */
   readonly ver?: string
+
+  /**
+   * Global flags, available before and after subcommands. Command flags are
+   * inherited by descendants; positional arguments remain local. Reuse a
+   * snippet in a command for inference of shared flag values.
+   */
+  readonly flags?: _Flags
 
   /**
    * Main command of the app.

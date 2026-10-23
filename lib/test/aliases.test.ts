@@ -12,7 +12,10 @@ describe('command aliases', () => {
     for (const name of ['commit', 'ci', 'save']) {
       expect(
         match({ sub: { remote } }, ['bun', 'tool', 'r', name, 'file']),
-      ).toEqual(ok([commit, 4]))
+      ).toMatchObject({
+        success: true,
+        value: { cmd: commit, offset: 4, path: ['remote', 'commit'] },
+      })
     }
     const names = command_names({ remote })
     expect(names).toEqual(

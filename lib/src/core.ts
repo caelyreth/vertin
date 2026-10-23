@@ -1,22 +1,36 @@
 /**
  * @license MIT
- * @file Command matching subsystem. This file resolves user input to the
- *   selected command context.
+ * @file Command matching and inherited option scopes.
  * @author Yu <me@iki.moe>
  * @copyright Yu 2026
  */
 
 import { invalid_command, no_command_specified } from './errors'
-import type { _Commands, _Message, _Result, App } from './types'
+import {
+  extend_flags,
+  flag_names,
+  is_boolean,
+  merge_params,
+} from './schema'
+import type {
+  _Commands,
+  _Flags,
+  _Message,
+  _Result,
+  App,
+  Flag,
+} from './types'
 import { err, is_err, ok, to_array } from './utils'
 
-// MARK: - utils
-
-const SINGLE_DASH = '-'
-
-function is_flag(token: string | undefined): token is string {
-  return token?.startsWith(SINGLE_DASH) === true && token !== SINGLE_DASH
+export interface _Match {
+  readonly cmd: _Commands[string]
+  readonly offset: number
+  readonly path: readonly string[]
+  readonly commands: readonly number[]
+  readonly flags: _Flags
 }
+
+// MARK: - names
 
 function register_name(
   names: Map<string, string>,
@@ -71,62 +85,200 @@ export function command_names(
   return ok(names)
 }
 
-function find_command(
-  commands: _Commands | undefined,
+// MARK: - option boundaries
+
+function is_flag(token: string): boolean {
+  return token !== '-' && token.startsWith('-')
+}
+
+function find_flag(
+  flags: _Flags,
+  name: string,
+  spec: App,
+): Flag | undefined {
+  const direct = Object.entries(flags).find(([key, flag]) =>
+    flag_names(key, flag).includes(name),
+  )?.[1]
+  if (direct || spec.config?.tweaks?.booleanNegation === false) {
+    return direct
+  }
+  if (!name.startsWith('--no-')) return undefined
+  const flag = find_flag(flags, `--${name.slice(5)}`, spec)
+  return flag && is_boolean(flag.resolver)
+    ? { resolver: Boolean }
+    : undefined
+}
+
+function readable(
   token: string | undefined,
-): _Result<_Commands[string] | undefined, _Message> {
-  const names = command_names(commands)
-  if (is_err(names)) return names
-  const key = names.value.get(token ?? '')
-  return ok(key === undefined ? undefined : commands![key])
+  flag: Flag,
+  spec: App,
+): token is string {
+  if (token === undefined || token === '--') return false
+  if (!token.startsWith('-') || token === '-') return true
+  if (spec.config?.tweaks?.negativeNumberValues === false) return false
+  const resolver = Array.isArray(flag.resolver)
+    ? flag.resolver[0]
+    : flag.resolver
+  return (
+    resolver === Number &&
+    token.split(',').every((part) => !Number.isNaN(Number(part)))
+  )
+}
+
+function array_flag_end(
+  argv: readonly string[],
+  offset: number,
+  flag: Flag,
+  names: ReadonlyMap<string, string>,
+  spec: App,
+): number {
+  const inline = argv[offset]!.includes('=')
+  let end = offset + 1
+  const comma = inline || argv[end]?.includes(',') === true
+  if (inline && !argv[offset]!.endsWith(',')) return end
+  while (readable(argv[end], flag, spec) && !names.has(argv[end]!)) {
+    const token = argv[end]!
+    end += 1
+    if (comma && !token.endsWith(',')) break
+  }
+  return end
+}
+
+function flag_end(
+  argv: readonly string[],
+  offset: number,
+  flag: Flag | undefined,
+  names: ReadonlyMap<string, string>,
+  spec: App,
+): number {
+  if (!flag || is_boolean(flag.resolver)) return offset + 1
+  if (
+    Array.isArray(flag.resolver) &&
+    spec.config?.tweaks?.variadicFlagValues !== false
+  ) {
+    return array_flag_end(argv, offset, flag, names, spec)
+  }
+  if (argv[offset]!.includes('=')) return offset + 1
+  return readable(argv[offset + 1], flag, spec) ? offset + 2 : offset + 1
 }
 
 // MARK: - matching
 
-function match_children(
-  cmd: _Commands[string],
+interface _Route {
+  cmd?: _Commands[string]
+  sub?: _Commands
+  flags: _Flags
+  path: string[]
+  commands: number[]
+}
+
+function option_offset(
+  spec: App,
   argv: readonly string[],
   offset: number,
-): _Result<readonly [_Commands[string], number], _Message> {
-  while (true) {
-    const child = find_command(cmd.sub, argv[offset])
-    if (is_err(child)) return child
-    if (!child.value) return ok([cmd, offset])
-    cmd = child.value
+  route: _Route,
+  names: ReadonlyMap<string, string>,
+): number | undefined {
+  const flag = find_flag(route.flags, argv[offset]!.split('=')[0]!, spec)
+  if (!route.cmd && spec.main && !flag) return undefined
+  return flag_end(argv, offset, flag, names, spec)
+}
+
+function select_command(
+  route: _Route,
+  key: string,
+  offset: number,
+): _Result<undefined, _Message> {
+  const cmd = route.sub![key]!
+  const inherited = extend_flags(route.flags, merge_params(cmd).flags)
+  if (is_err(inherited)) return inherited
+  route.cmd = cmd
+  route.flags = inherited.value
+  route.path.push(key)
+  route.commands.push(offset)
+  route.sub = cmd.sub
+  return ok(undefined)
+}
+
+function match_subcommands(
+  spec: App,
+  argv: readonly string[],
+  offset: number,
+  route: _Route,
+): _Result<number, _Message> {
+  while (route.sub) {
+    const names = command_names(route.sub)
+    if (is_err(names)) return names
+    const token = argv[offset]
+    if (token === undefined || token === '--') break
+    if (is_flag(token)) {
+      const next = option_offset(spec, argv, offset, route, names.value)
+      if (next === undefined) break
+      offset = next
+      continue
+    }
+    const key = names.value.get(token)
+    if (key === undefined) break
+    const selected = select_command(route, key, offset)
+    if (is_err(selected)) return selected
     offset += 1
   }
+  return ok(offset)
 }
 
 /**
- * Resolves the command selected by the provided argv tokens.
+ * Selects a command while preserving original argv positions for
+ * diagnostics.
  */
 export function match(
   spec: App,
   argv: readonly string[],
   offset: number = 2,
-): _Result<readonly [_Commands[string], number], _Message> {
-  const token = argv[offset]
-
-  if (is_flag(token)) {
-    if (spec.main) {
-      return ok([spec.main, offset])
-    }
-    return err(no_command_specified)
+): _Result<_Match, _Message> {
+  const route: _Route = {
+    sub: spec.sub,
+    flags: spec.flags ?? {},
+    path: [],
+    commands: [],
   }
-
-  const subCommand = find_command(spec.sub, token)
-  if (is_err(subCommand)) return subCommand
-  if (subCommand.value) {
-    return match_children(subCommand.value, argv, offset + 1)
+  const end = match_subcommands(spec, argv, offset, route)
+  if (is_err(end)) return end
+  if (route.cmd) {
+    return ok({
+      cmd: route.cmd,
+      offset: end.value,
+      path: route.path,
+      commands: route.commands,
+      flags: route.flags,
+    })
   }
+  return match_main(spec, argv, end.value, route.commands)
+}
 
+function match_main(
+  spec: App,
+  argv: readonly string[],
+  offset: number,
+  commands: readonly number[],
+): _Result<_Match, _Message> {
   if (spec.main) {
-    return ok([spec.main, offset])
+    const flags = extend_flags(
+      spec.flags ?? {},
+      merge_params(spec.main).flags,
+    )
+    if (is_err(flags)) return flags
+    return ok({
+      cmd: spec.main,
+      offset,
+      path: [],
+      commands,
+      flags: flags.value,
+    })
   }
-
-  if (token) {
+  const token = argv[offset]
+  if (token && !is_flag(token)) {
     return err(invalid_command(argv, offset, token))
   }
-
   return err(no_command_specified)
 }

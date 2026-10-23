@@ -1,5 +1,6 @@
+import { run } from '@/app'
 import { create_collector } from '@/collector'
-import type { _Collector, _Many, _Message } from '@/types'
+import type { _Collector, _Many, _Message, App } from '@/types'
 
 export interface _CapturedStderr {
   readonly chunks: string[]
@@ -32,6 +33,22 @@ export function capture_stderr(): _CapturedStderr {
     restore: () => {
       process.stderr.write = original
     },
+  }
+}
+
+export async function invoke_app(spec: App, argv: readonly string[]) {
+  const originalArgv = [...Bun.argv]
+  const originalExitCode = process.exitCode
+  const stderr = capture_stderr()
+  try {
+    set_argv(['bun', 'tool', ...argv])
+    process.exitCode = 0
+    await run(spec)
+    return { stderr: stderr.text(), exitCode: process.exitCode }
+  } finally {
+    set_argv(originalArgv)
+    process.exitCode = originalExitCode ?? 0
+    stderr.restore()
   }
 }
 

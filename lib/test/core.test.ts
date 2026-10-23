@@ -3,7 +3,7 @@ import { describe, expect, it } from 'bun:test'
 import { match } from '@/core'
 import { invalid_command, no_command_specified } from '@/errors'
 import { cmd } from '@/helper'
-import { err, ok } from '@/utils'
+import { err } from '@/utils'
 
 describe('command matching', () => {
   const root = cmd({}, () => {})
@@ -13,7 +13,7 @@ describe('command matching', () => {
   it('uses main command when input starts with a flag', () => {
     expect(
       match({ main: root }, ['bun', 'gitish', '--version'], 2),
-    ).toEqual(ok([root, 2]))
+    ).toMatchObject({ success: true, value: { cmd: root, offset: 2 } })
   })
 
   it('reports a flag-only invocation when no main command exists', () => {
@@ -29,13 +29,21 @@ describe('command matching', () => {
         ['bun', 'gitish', 'push', 'commit', 'src'],
         2,
       ),
-    ).toEqual(ok([commit, 4]))
+    ).toMatchObject({
+      success: true,
+      value: {
+        cmd: commit,
+        offset: 4,
+        path: ['push', 'commit'],
+        commands: [2, 3],
+      },
+    })
   })
 
   it('falls back to main when a token is not a subcommand', () => {
-    expect(match({ main: root }, ['bun', 'gitish', 'draft'], 2)).toEqual(
-      ok([root, 2]),
-    )
+    expect(
+      match({ main: root }, ['bun', 'gitish', 'draft'], 2),
+    ).toMatchObject({ success: true, value: { cmd: root, offset: 2 } })
   })
 
   it('reports invalid and missing commands', () => {

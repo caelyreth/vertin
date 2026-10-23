@@ -5,6 +5,7 @@
  * @copyright Yu 2026
  */
 
+import { extend_flags, merge_params } from './schema'
 import type {
   _Args,
   _Commands,
@@ -21,7 +22,7 @@ import type {
   Resolver,
   Snippet,
 } from './types'
-import { to_array } from './utils'
+import { is_err, ok, to_array } from './utils'
 
 // MARK: - types
 
@@ -29,11 +30,6 @@ interface _RawValue {
   readonly value: string
   readonly offset: number
   readonly token: string
-}
-
-interface _Params {
-  readonly args: _Args
-  readonly flags: _Flags
 }
 
 interface _ParsedArgv {
@@ -51,6 +47,8 @@ interface _ParsedArgv {
  */
 interface _ParseEnv {
   readonly argv: readonly string[]
+  readonly source: readonly string[]
+  readonly offsets: readonly number[]
   readonly args: readonly Argument[]
   readonly flags: _Flags
   readonly tokens: ReadonlyMap<string, string>
@@ -205,23 +203,6 @@ function resolve_raw(
   resolver: Resolver | undefined,
 ): unknown {
   return resolve_unit(raw.value, resolver_unit(resolver))
-}
-
-// MARK: - snippets
-
-function merge_params(cmd: _Commands[string]): _Params {
-  const args: _Args = {}
-  const flags: _Flags = {}
-
-  for (const part of cmd.use ?? []) {
-    Object.assign(args, part.args)
-    Object.assign(flags, part.flags)
-  }
-
-  Object.assign(args, cmd.args)
-  Object.assign(flags, cmd.flags)
-
-  return { args, flags }
 }
 
 // MARK: - flag parsing
@@ -557,8 +538,8 @@ function unknown_flag(
   env.collector.submit(
     token_error(
       'Unknown flag occurred',
-      env.argv,
-      offset,
+      env.source,
+      env.offsets[offset]!,
       `\`${token}\` is not a known flag`,
     ),
   )
@@ -572,8 +553,8 @@ function missing_flag_value(
   env.collector.submit(
     token_error(
       'Missing flag value',
-      env.argv,
-      offset,
+      env.source,
+      env.offsets[offset]!,
       `\`${token}\` requires a value`,
     ),
   )
@@ -703,7 +684,16 @@ function parse_argv(
   flags: _Flags,
   collector: _Collector,
   tweaks: _RuntimeTweaks,
+  commands: readonly number[] = [],
 ): _ParsedArgv {
+  const offsets = argv
+    .map((_, index) => index)
+    .filter((index) => !commands.includes(index))
+  const input = offsets.map((index) => argv[index]!)
+  const boundaries = commands.map((index) => {
+    const next = offsets.findIndex((position) => position > index)
+    return next === -1 ? input.length : next
+  })
   const parsed: _ParsedArgv = {
     args: [],
     flags: {},
@@ -711,7 +701,9 @@ function parse_argv(
     unkFlags: [],
   }
   const env: _ParseEnv = {
-    argv,
+    argv: input,
+    source: argv,
+    offsets,
     args: Object.values(args),
     flags,
     tokens: flag_tokens(flags, collector),
@@ -719,8 +711,8 @@ function parse_argv(
     tweaks,
   }
 
-  for (let i = offset; i < argv.length; i += 1) {
-    const token = argv[i]!
+  for (let i = offset; i < input.length; i += 1) {
+    const token = input[i]!
 
     if (token === '--') {
       append_positionals(parsed, env, i + 1)
@@ -732,11 +724,26 @@ function parse_argv(
       continue
     }
 
+    const boundary = boundaries.find((end) => end > i)
+    const scope =
+      boundary === undefined
+        ? env
+        : { ...env, argv: input.slice(0, boundary), args: [] }
     const [name, inline] = split_flag(token)
-    i = parse_flag_token(parsed, token, name, inline, i, env)
+    i = parse_flag_token(parsed, token, name, inline, i, scope)
   }
 
-  return parsed
+  for (const key of Object.keys(parsed.flags)) {
+    parsed.flags[key] = original_offsets(parsed.flags[key]!, offsets)
+  }
+  return { ...parsed, args: original_offsets(parsed.args, offsets) }
+}
+
+function original_offsets(
+  values: readonly _RawValue[],
+  offsets: readonly number[],
+): _RawValue[] {
+  return values.map((raw) => ({ ...raw, offset: offsets[raw.offset]! }))
 }
 
 // MARK: - parameter parsing
@@ -1043,16 +1050,27 @@ export async function create_context(
   argv: readonly string[],
   offset: number,
   collector: _Collector,
+  input: {
+    readonly flags?: _Flags
+    readonly commands?: readonly number[]
+  } = {},
 ): Promise<_RuntimeContext> {
   const params = merge_params(cmd)
+  const scoped =
+    input.flags === undefined
+      ? extend_flags(app.flags ?? {}, params.flags)
+      : ok(input.flags)
+  if (is_err(scoped)) collector.submit(scoped.errors)
+  const flagSpecs = is_err(scoped) ? params.flags : scoped.value
   const tweaks = runtime_tweaks(app.config)
   const parsed = parse_argv(
     argv,
     offset,
     params.args,
-    params.flags,
+    flagSpecs,
     collector,
     tweaks,
+    input.commands,
   )
   const args = parse_arg_values(
     argv,
@@ -1061,17 +1079,12 @@ export async function create_context(
     parsed.unkArgs,
     collector,
   )
-  const flags = parse_flag_values(
-    argv,
-    params.flags,
-    parsed.flags,
-    collector,
-  )
+  const flags = parse_flag_values(argv, flagSpecs, parsed.flags, collector)
 
   check_choices(params.args, args, collector)
-  check_choices(params.flags, flags, collector)
+  check_choices(flagSpecs, flags, collector)
   await run_checks(params.args, args, collector)
-  await run_checks(params.flags, flags, collector)
+  await run_checks(flagSpecs, flags, collector)
 
   return {
     args,
