@@ -1,21 +1,14 @@
 /**
- * @file Terminal output colorization utilities for Vertin.
- *
- * This module is copied from '@uttr/tint', a lightweight utility for
- * applying ANSI color codes to console output.
- *
- * Note: '@uttr/tint' is a trusted internal dependency developed by the
- * same author. Repository: https://github.com/caelyreth/uttr-tint
- *
- * To maintain a zero-dependency footprint, this library is bundled
- * directly with Vertin.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT (Inherited from @uttr/tint)
+ * @file Terminal output colorization utilities for Vertin. This module is
+ *   copied from '@uttr/tint', a lightweight utility for applying ANSI color
+ *   codes to console output. Note: '@uttr/tint' is a trusted internal
+ *   dependency developed by the same author. Repository:
+ *   https://github.com/caelyreth/uttr-tint To maintain a zero-dependency
+ *   footprint, this library is bundled directly with Vertin.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
-
-import process from 'node:process'
 
 // MARK: - constants
 const ESC = '\x1B['

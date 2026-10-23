@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 
 import { create_collector } from '@/collector'
 import { args, check, cmd, flags, snippet } from '@/helper'
@@ -58,7 +58,7 @@ describe('runtime context construction', () => {
       { sub: { deploy } },
       deploy,
       [
-        'node',
+        'bun',
         'release',
         'deploy',
         'staging',
@@ -113,7 +113,7 @@ describe('runtime context construction', () => {
       { sub: { create } },
       create,
       [
-        'node',
+        'bun',
         'scaffold',
         'create',
         'blog',
@@ -135,15 +135,15 @@ describe('runtime context construction', () => {
     expect(ctx.unkArgs).toEqual(['extra'])
     expect(ctx.unkFlags).toEqual(['--unknown'])
     expect(memory.collector.has_errors()).toBe(true)
-    expect(memory.descriptions()).toEqual(
-      expect.arrayContaining([
-        'Invalid argument value',
-        'Unknown argument occurred',
-        'Missing flag value',
-        'Unknown flag occurred',
-        'Repeated flag occurred',
-      ]),
-    )
+    for (const desc of [
+      'Invalid argument value',
+      'Unknown argument occurred',
+      'Missing flag value',
+      'Unknown flag occurred',
+      'Repeated flag occurred',
+    ]) {
+      expect(memory.descriptions()).toContain(desc)
+    }
   })
 
   it('handles missing positional arguments, optional omissions, fallbacks, and failed checks', async () => {
@@ -162,7 +162,7 @@ describe('runtime context construction', () => {
     const missingCtx = await create_context(
       { sub: { missing } },
       missing,
-      ['node', 'craft', 'missing'],
+      ['bun', 'craft', 'missing'],
       3,
       missingMemory.collector,
     )
@@ -201,7 +201,7 @@ describe('runtime context construction', () => {
     const auditCtx = await create_context(
       { sub: { audit } },
       audit,
-      ['node', 'craft', 'audit', 'abc123', 'Draft', 'team'],
+      ['bun', 'craft', 'audit', 'abc123', 'Draft', 'team'],
       3,
       auditMemory.collector,
     )
@@ -234,7 +234,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { meter } },
       meter,
-      ['node', 'meter', 'meter', '--threshold', '-10', '--', '-2'],
+      ['bun', 'meter', 'meter', '--threshold', '-10', '--', '-2'],
       3,
       collector,
     )
@@ -259,7 +259,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { serve } },
       serve,
-      ['node', 'web', 'serve', '--no-cache'],
+      ['bun', 'web', 'serve', '--no-cache'],
       3,
       collector,
     )
@@ -271,7 +271,7 @@ describe('runtime context construction', () => {
     const edgeCtx = await create_context(
       { sub: { serve } },
       serve,
-      ['node', 'web', 'serve', '--no-output', '--no-cache=true'],
+      ['bun', 'web', 'serve', '--no-output', '--no-cache=true'],
       3,
       memory.collector,
     )
@@ -294,7 +294,7 @@ describe('runtime context construction', () => {
         sub: { serve },
       },
       serve,
-      ['node', 'web', 'serve', '--no-cache'],
+      ['bun', 'web', 'serve', '--no-cache'],
       3,
       partialConfig,
     )
@@ -320,7 +320,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { list } },
       list,
-      ['node', 'fs', 'list', '-alh'],
+      ['bun', 'fs', 'list', '-alh'],
       3,
       collector,
     )
@@ -337,7 +337,7 @@ describe('runtime context construction', () => {
     const edgeCtx = await create_context(
       { sub: { list } },
       list,
-      ['node', 'fs', 'list', '-ao'],
+      ['bun', 'fs', 'list', '-ao'],
       3,
       memory.collector,
     )
@@ -375,7 +375,7 @@ describe('runtime context construction', () => {
       { sub: { calculate } },
       calculate,
       [
-        'node',
+        'bun',
         'math',
         'calculate',
         '--number',
@@ -412,7 +412,7 @@ describe('runtime context construction', () => {
     const missingCtx = await create_context(
       { sub: { calculate } },
       calculate,
-      ['node', 'math', 'calculate', '--number', '--label', 'done', 'dist'],
+      ['bun', 'math', 'calculate', '--number', '--label', 'done', 'dist'],
       3,
       memory.collector,
     )
@@ -446,7 +446,7 @@ describe('runtime context construction', () => {
         sub: { calculate },
       },
       calculate,
-      ['node', 'math', 'calculate', '--number', '1', '2'],
+      ['bun', 'math', 'calculate', '--number', '1', '2'],
       3,
       collector,
     )
@@ -474,7 +474,7 @@ describe('runtime context construction', () => {
     const scalarCtx = await create_context(
       { sub: { scalarArgs } },
       scalarArgs,
-      ['node', 'math', 'scalarArgs', 'core', '--number', '1', '2', 'dist'],
+      ['bun', 'math', 'scalarArgs', 'core', '--number', '1', '2', 'dist'],
       3,
       scalarCollector,
     )
@@ -499,7 +499,7 @@ describe('runtime context construction', () => {
     const futureRestCtx = await create_context(
       { sub: { restArgs } },
       restArgs,
-      ['node', 'math', 'restArgs', '--number', '1', '2', 'src/index.ts'],
+      ['bun', 'math', 'restArgs', '--number', '1', '2', 'src/index.ts'],
       3,
       futureRestCollector,
     )
@@ -512,7 +512,7 @@ describe('runtime context construction', () => {
     const usedRestCtx = await create_context(
       { sub: { restArgs } },
       restArgs,
-      ['node', 'math', 'restArgs', 'src/index.ts', '--number', '1', '2'],
+      ['bun', 'math', 'restArgs', 'src/index.ts', '--number', '1', '2'],
       3,
       usedRestCollector,
     )
@@ -537,7 +537,7 @@ describe('runtime context construction', () => {
     const optionalCtx = await create_context(
       { sub: { optionalArg } },
       optionalArg,
-      ['node', 'math', 'optionalArg', '--number', '1', '2'],
+      ['bun', 'math', 'optionalArg', '--number', '1', '2'],
       3,
       optionalCollector,
     )
@@ -574,7 +574,7 @@ describe('runtime context construction', () => {
         sub: { serve },
       },
       serve,
-      ['node', 'web', 'serve', '--no-cache', '-al', '--threshold', '-10'],
+      ['bun', 'web', 'serve', '--no-cache', '-al', '--threshold', '-10'],
       3,
       memory.collector,
     )
@@ -608,7 +608,7 @@ describe('runtime context construction', () => {
         sub: { number },
       },
       number,
-      ['node', 'web', 'number', '--value', '-1'],
+      ['bun', 'web', 'number', '--value', '-1'],
       3,
       negativeMemory.collector,
     )
@@ -638,7 +638,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { archive } },
       archive,
-      ['node', 'pack', 'archive', 'README.md', 'src/index.ts'],
+      ['bun', 'pack', 'archive', 'README.md', 'src/index.ts'],
       3,
       collector,
     )
@@ -663,7 +663,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { copy } },
       copy,
-      ['node', 'fs', 'copy', '-o', 'dist/app.js'],
+      ['bun', 'fs', 'copy', '-o', 'dist/app.js'],
       3,
       memory.collector,
     )
@@ -690,19 +690,15 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { inspect } },
       inspect,
-      ['node', 'tool', 'inspect', '-d', '-g'],
+      ['bun', 'tool', 'inspect', '-d', '-g'],
       3,
       memory.collector,
     )
 
     expect(ctx.flags).toEqual({ good: true })
     expect(ctx.unkFlags).toEqual(['-d'])
-    expect(memory.descriptions()).toEqual(
-      expect.arrayContaining([
-        'Invalid flag schema',
-        'Unknown flag occurred',
-      ]),
-    )
+    expect(memory.descriptions()).toContain('Invalid flag schema')
+    expect(memory.descriptions()).toContain('Unknown flag occurred')
     expect(memory.text()).toContain('Flag name must not be empty')
     expect(memory.text()).toContain('Alias for `debug`')
   })
@@ -722,7 +718,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { move } },
       move,
-      ['node', 'fs', 'move', 'a.txt', 'b.txt', 'archive/'],
+      ['bun', 'fs', 'move', 'a.txt', 'b.txt', 'archive/'],
       3,
       memory.collector,
     )
@@ -752,7 +748,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { schedule } },
       schedule,
-      ['node', 'cms', 'schedule', '2026-06-09', '--published=maybe'],
+      ['bun', 'cms', 'schedule', '2026-06-09', '--published=maybe'],
       3,
       memory.collector,
     )
@@ -786,7 +782,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { convert } },
       convert,
-      ['node', 'asset', 'convert', 'design.fig', '--mode=fast'],
+      ['bun', 'asset', 'convert', 'design.fig', '--mode=fast'],
       3,
       memory.collector,
     )
@@ -818,7 +814,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { import_assets } },
       import_assets,
-      ['node', 'asset', 'import_assets', 'hero.png'],
+      ['bun', 'asset', 'import_assets', 'hero.png'],
       3,
       memory.collector,
     )
@@ -846,7 +842,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { send } },
       send,
-      ['node', 'mail', 'send', 'letter.md', '-f', '--output'],
+      ['bun', 'mail', 'send', 'letter.md', '-f', '--output'],
       3,
       memory.collector,
     )

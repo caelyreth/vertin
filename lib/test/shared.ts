@@ -11,6 +11,10 @@ function to_array<T>(value: _Many<T>): readonly T[] {
   return Array.isArray(value) ? value : [value as T]
 }
 
+export function set_argv(argv: readonly string[]): void {
+  Bun.argv.splice(0, Bun.argv.length, ...argv)
+}
+
 export function capture_stderr(): _CapturedStderr {
   const chunks: string[] = []
   const original = process.stderr.write.bind(process.stderr)

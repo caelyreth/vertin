@@ -1,9 +1,8 @@
 /**
- * @file Runtime parsing and context construction.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Runtime parsing and context construction.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
 
 import type {
@@ -59,7 +58,15 @@ interface _ParseEnv {
   readonly tweaks: _RuntimeTweaks
 }
 
-type _RuntimeContext = HandlerContext<_Args, _Flags, Snippet[]>
+// Command matching erases the concrete schema, so resolved values stay
+// unknown until they reach the command's typed handler boundary.
+interface _RuntimeContext extends Omit<
+  HandlerContext<_Args, _Flags, Snippet[]>,
+  'args' | 'flags'
+> {
+  readonly args: Record<string, unknown>
+  readonly flags: Record<string, unknown>
+}
 type _ResolverUnit = _ResolverFn | _ResolverCtor
 type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
 
@@ -1038,8 +1045,8 @@ export async function create_context(
   await run_checks(params.flags, flags, collector)
 
   return {
-    args: args as _RuntimeContext['args'],
-    flags: flags as _RuntimeContext['flags'],
+    args,
+    flags,
     unkArgs: parsed.unkArgs,
     unkFlags: parsed.unkFlags,
     __internal__: {

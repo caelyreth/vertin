@@ -1,11 +1,9 @@
 /**
- * @file Utility functions across Vertin framework.
- *
- * This file contains all utility functions across the framework Vertin.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Utility functions across Vertin framework. This file contains all
+ *   utility functions across the framework Vertin.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
 
 import type { _Err, _Many, _Ok, _Result } from './types'

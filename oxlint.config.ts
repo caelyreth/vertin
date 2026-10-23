@@ -9,7 +9,6 @@ export default defineConfig({
     'jsdoc',
     'promise',
     'unicorn',
-    'node',
   ],
   options: {
     typeAware: true,

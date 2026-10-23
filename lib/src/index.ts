@@ -1,9 +1,8 @@
 /**
- * @file Public package surface.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Public package surface.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
 
 export { run } from './app'

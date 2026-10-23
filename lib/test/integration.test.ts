@@ -1,27 +1,41 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 
 import { app, args, check, cmd, flags, snippet } from '@/index'
 
-import { capture_stderr, type _CapturedStderr } from './shared'
+import { capture_stderr, set_argv, type _CapturedStderr } from './shared'
 
 let originalArgv: string[]
 let originalExitCode: typeof process.exitCode
 let stderr: _CapturedStderr
 
 beforeEach(() => {
-  originalArgv = process.argv
+  originalArgv = [...Bun.argv]
   originalExitCode = process.exitCode
-  process.exitCode = undefined
+  process.exitCode = 0
   stderr = capture_stderr()
 })
 
 afterEach(() => {
-  process.argv = originalArgv
-  process.exitCode = originalExitCode
+  set_argv(originalArgv)
+  process.exitCode = originalExitCode ?? 0
   stderr.restore()
 })
 
 describe('public app runner', () => {
+  it.each([
+    ['/usr/local/bin/bun', '/repo/bin/tool.ts'],
+    ['C:\\tools\\bun', 'C:\\repo\\bin\\tool.ts'],
+  ])(
+    'shows basenames in diagnostics for %s and %s',
+    async (exe, script) => {
+      set_argv([exe, script, 'missing'])
+
+      await app({}).run()
+
+      expect(process.exitCode).toBe(1)
+      expect(stderr.text()).toContain('> bun tool.ts missing')
+    },
+  )
   it('runs a real project workflow with typed args, flags, snippets, and app-local run()', async () => {
     const received: unknown[] = []
     const workspace = snippet({
@@ -54,8 +68,8 @@ describe('public app runner', () => {
       sub: { publish },
     })
 
-    process.argv = [
-      '/usr/local/bin/node',
+    set_argv([
+      '/usr/local/bin/bun',
       '/repo/bin/release.ts',
       'publish',
       '@acme/web',
@@ -65,11 +79,11 @@ describe('public app runner', () => {
       '--channel=stable',
       '-y',
       '--dry-run=false',
-    ]
+    ])
 
     await cli.run()
 
-    expect(process.exitCode).toBeUndefined()
+    expect(process.exitCode).toBe(0)
     expect(stderr.text()).toBe('')
     expect(received).toHaveLength(1)
     expect(received[0]).toMatchObject({
@@ -108,15 +122,15 @@ describe('public app runner', () => {
       },
     )
 
-    process.argv = [
-      'node',
+    set_argv([
+      'bun',
       'craft',
       'make',
       'My App',
       '--count',
       'many',
       '--extra',
-    ]
+    ])
 
     await app({ sub: { make } }).run()
 
@@ -140,7 +154,7 @@ describe('public app runner', () => {
       },
     )
 
-    process.argv = ['node', 'web', 'serve', '--no-cache']
+    set_argv(['bun', 'web', 'serve', '--no-cache'])
 
     await app(
       {
@@ -158,17 +172,17 @@ describe('public app runner', () => {
     expect(stderr.text()).toContain('Unknown flag occurred')
   })
 
-  it('reports command matching and handler failures through internal diagnostics', async () => {
-    process.argv = ['node', 'craft', 'missing']
+  it('reports command matching failures through internal diagnostics', async () => {
+    set_argv(['bun', 'craft', 'missing'])
 
     await app({}).run()
 
     expect(process.exitCode).toBe(1)
     expect(stderr.text()).toContain('Invalid command occurred')
+  })
 
-    stderr.chunks.length = 0
-    process.exitCode = undefined
-    process.argv = ['node', 'craft', 'explode']
+  it('reports handler failures through internal diagnostics', async () => {
+    set_argv(['bun', 'craft', 'explode'])
 
     await app({
       sub: {
@@ -184,7 +198,7 @@ describe('public app runner', () => {
   })
 
   it('reports non-Error handler failures without losing exit semantics', async () => {
-    process.argv = ['node', 'craft', 'explode']
+    set_argv(['bun', 'craft', 'explode'])
 
     await app({
       sub: {

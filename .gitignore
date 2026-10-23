@@ -1,6 +1,5 @@
-# runtime + dependencies
+# dependencies
 node_modules
-.pnpm-store
 
 # development
 dist

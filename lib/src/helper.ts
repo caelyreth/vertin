@@ -1,12 +1,10 @@
 /**
- * @file Helper functions to create specifications.
- *
- * Vertin uses a spec-first pattern, these helper functions are used to
- * create specifications easily with type inference.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Helper functions to create specifications. Vertin uses a spec-first
+ *   pattern, these helper functions are used to create specifications
+ *   easily with type inference.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
 
 import { run as run_app } from './app'

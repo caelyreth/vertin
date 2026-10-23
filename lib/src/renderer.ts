@@ -1,17 +1,12 @@
 /**
- * @file Terminal message rendering.
- *
- * The renderer turns framework messages and diagnostics into the caret
- * diagrams shown on stderr, backed by the indentation formatter below. It
- * stays internal to Vertin rendering; the collector owns queuing, this
- * file owns presentation.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Terminal message rendering. The renderer turns framework messages
+ *   and diagnostics into the caret diagrams shown on stderr, backed by the
+ *   indentation formatter below. It stays internal to Vertin rendering; the
+ *   collector owns queuing, this file owns presentation.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
-
-import process from 'node:process'
 
 import { blue, cyan, magenta, normal, raw_len, red, yellow } from './tint'
 import type { _Diagnostics, _Many, _Message } from './types'

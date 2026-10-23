@@ -1,0 +1,8 @@
+[run]
+bun = true
+
+[test]
+root = "./lib/test"
+coverageReporter = ["text", "lcov"]
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["**/test/**"]

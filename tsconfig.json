@@ -11,7 +11,10 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
-    "types": ["node"]
+    "paths": {
+      "@/*": ["./lib/src/*"]
+    },
+    "types": ["bun"]
   },
-  "include": ["lib/**/src", "lib/**/test", "vitest.config.ts"]
+  "include": ["lib/src", "lib/test", "*.config.ts"]
 }

@@ -1,12 +1,10 @@
 /**
- * @file Message collector subsystem.
- *
- * The collector centralizes framework diagnostics and terminal output. It stays
- * internal to Vertin runtime and rendering.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Message collector subsystem. The collector centralizes framework
+ *   diagnostics and terminal output. It stays internal to Vertin runtime
+ *   and rendering.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
 
 import { display } from './renderer'

@@ -1,12 +1,10 @@
 /**
- * @file Essential types across Vertin framework.
- *
- * This file contains shared framework types. Types with an `_` prefix are
- * exported for inference support and are not intended for direct user code.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Essential types across Vertin framework. This file contains shared
+ *   framework types. Types with an `_` prefix are exported for inference
+ *   support and are not intended for direct user code.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
 
 // MARK: - internal diagnostics

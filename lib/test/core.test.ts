@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'bun:test'
 
 import { match } from '@/core'
 import { invalid_command, no_command_specified } from '@/errors'
@@ -12,12 +12,12 @@ describe('command matching', () => {
 
   it('uses main command when input starts with a flag', () => {
     expect(
-      match({ main: root }, ['node', 'gitish', '--version'], 2),
+      match({ main: root }, ['bun', 'gitish', '--version'], 2),
     ).toEqual(ok([root, 2]))
   })
 
   it('reports a flag-only invocation when no main command exists', () => {
-    expect(match({}, ['node', 'gitish', '--version'], 2)).toEqual(
+    expect(match({}, ['bun', 'gitish', '--version'], 2)).toEqual(
       err(no_command_specified),
     )
   })
@@ -26,26 +26,26 @@ describe('command matching', () => {
     expect(
       match(
         { sub: { push } },
-        ['node', 'gitish', 'push', 'commit', 'src'],
+        ['bun', 'gitish', 'push', 'commit', 'src'],
         2,
       ),
     ).toEqual(ok([commit, 4]))
   })
 
   it('falls back to main when a token is not a subcommand', () => {
-    expect(match({ main: root }, ['node', 'gitish', 'draft'], 2)).toEqual(
+    expect(match({ main: root }, ['bun', 'gitish', 'draft'], 2)).toEqual(
       ok([root, 2]),
     )
   })
 
   it('reports invalid and missing commands', () => {
-    expect(match({}, ['node', 'gitish', 'unknown'], 2)).toEqual(
-      err(invalid_command(['node', 'gitish', 'unknown'], 2, 'unknown')),
+    expect(match({}, ['bun', 'gitish', 'unknown'], 2)).toEqual(
+      err(invalid_command(['bun', 'gitish', 'unknown'], 2, 'unknown')),
     )
-    expect(match({}, ['node', 'gitish', '-'], 2)).toEqual(
-      err(invalid_command(['node', 'gitish', '-'], 2, '-')),
+    expect(match({}, ['bun', 'gitish', '-'], 2)).toEqual(
+      err(invalid_command(['bun', 'gitish', '-'], 2, '-')),
     )
-    expect(match({}, ['node', 'gitish'], 2)).toEqual(
+    expect(match({}, ['bun', 'gitish'], 2)).toEqual(
       err(no_command_specified),
     )
   })

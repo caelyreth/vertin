@@ -1,13 +1,9 @@
 /**
- * @file Runtime entry point for Vertin applications.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Runtime entry point for Vertin applications.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
-
-import path from 'node:path'
-import process from 'node:process'
 
 import { create_collector } from './collector'
 import { match } from './core'
@@ -18,7 +14,9 @@ import { is_err } from './utils'
 // MARK: - utils
 
 function trim_argv(argv: readonly string[]): string[] {
-  const trimmedStart = argv.slice(0, 2).map((p) => path.basename(p))
+  const trimmedStart = argv
+    .slice(0, 2)
+    .map((p) => p.replace(/[/\\]+$/, '').replace(/^.*[/\\]/, ''))
   const remainingArgs = argv.slice(2)
   return [...trimmedStart, ...remainingArgs]
 }
@@ -29,7 +27,7 @@ function trim_argv(argv: readonly string[]): string[] {
  * Runs a Vertin application against the current process arguments.
  */
 export async function run(spec: App): Promise<void> {
-  const argv = trim_argv(process.argv)
+  const argv = trim_argv(Bun.argv)
   const collector = create_collector()
   const matched = match(spec, argv, 2)
 

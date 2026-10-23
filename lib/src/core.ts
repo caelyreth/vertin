@@ -1,11 +1,9 @@
 /**
- * @file Command matching subsystem.
- *
- * This file resolves user input to the selected command context.
- *
- * @copyright Yu 2026
- * @author Yu <me@iki.moe>
  * @license MIT
+ * @file Command matching subsystem. This file resolves user input to the
+ *   selected command context.
+ * @author Yu <me@iki.moe>
+ * @copyright Yu 2026
  */
 
 import { invalid_command, no_command_specified } from './errors'
