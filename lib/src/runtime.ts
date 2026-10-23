@@ -953,6 +953,33 @@ function parse_flag_values(
 
 // MARK: - checking
 
+function check_choices(
+  specs: _Args | _Flags,
+  values: Record<string, unknown>,
+  collector: _Collector,
+) {
+  for (const [key, spec] of Object.entries(specs)) {
+    const value = values[key]
+    if (spec.choices === undefined || value === undefined) continue
+
+    const items: readonly unknown[] = is_array_resolver(spec.resolver)
+      ? (value as readonly unknown[])
+      : [value]
+    const invalid = items.filter((item) => !spec.choices!.includes(item))
+    if (invalid.length === 0) continue
+
+    collector.submit(
+      error('Invalid parameter choice', {
+        source: key,
+        offset: 0,
+        markup: `${invalid.map(String).join(', ')} is not an allowed value`,
+        expected: spec.choices.map(String),
+      }),
+    )
+    delete values[key]
+  }
+}
+
 async function run_checks(
   specs: _Args | _Flags,
   values: Record<string, unknown>,
@@ -1041,6 +1068,8 @@ export async function create_context(
     collector,
   )
 
+  check_choices(params.args, args, collector)
+  check_choices(params.flags, flags, collector)
   await run_checks(params.args, args, collector)
   await run_checks(params.flags, flags, collector)
 

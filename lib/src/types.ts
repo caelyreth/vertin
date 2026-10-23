@@ -170,6 +170,9 @@ export type _Resolve<T extends Resolver> = T extends readonly (infer U)[]
     ? _ResolveUnit<U>[]
     : _ResolveUnit<T>
 
+type _ChoiceOf<T extends Resolver> =
+  _Resolve<T> extends readonly (infer U)[] ? U : _Resolve<T>
+
 // MARK: - checking
 
 /**
@@ -214,6 +217,11 @@ interface _Param<T extends Resolver = Resolver> {
    * Brief description of parameter.
    */
   readonly desc?: string
+
+  /**
+   * Allowed resolved values. Array parameters check each item.
+   */
+  readonly choices?: readonly _ChoiceOf<T>[]
 
   /**
    * Fallback value if parameter field omitted.
@@ -284,11 +292,20 @@ export type _ResolverOf<T extends _Param> = T['resolver'] extends Resolver
  * @private
  */
 export type _ParamMap<T extends Record<string, _Param>> = {
-  [K in keyof T]: Omit<T[K], 'fallback' | 'check'> & {
-    fallback?: NoInfer<_Resolve<_ResolverOf<T[K]>>>
-    check?: Check<NoInfer<_Resolve<_ResolverOf<T[K]>>>>
+  [K in keyof T]: Omit<T[K], 'fallback' | 'check' | 'choices'> & {
+    choices?: readonly NoInfer<_ChoiceOf<_ResolverOf<T[K]>>>[]
+    fallback?: NoInfer<_ValueOf<T[K]>>
+    check?: Check<NoInfer<_ValueOf<T[K]>>>
   }
 }
+
+type _ValueOf<T extends _Param> = T extends {
+  readonly choices: readonly (infer U)[]
+}
+  ? _Resolve<_ResolverOf<T>> extends readonly unknown[]
+    ? Extract<U, _ChoiceOf<_ResolverOf<T>>>[]
+    : Extract<U, _ChoiceOf<_ResolverOf<T>>>
+  : _Resolve<_ResolverOf<T>>
 
 type _Required<T extends _Param, D extends boolean> = T extends {
   readonly required: infer R
@@ -299,12 +316,12 @@ type _Required<T extends _Param, D extends boolean> = T extends {
   : D
 
 type _ParsedParam<T extends _Param, D extends boolean> =
-  T['fallback'] extends _Resolve<_ResolverOf<T>>
-    ? _Resolve<_ResolverOf<T>>
+  T['fallback'] extends _ValueOf<T>
+    ? _ValueOf<T>
     : _Required<T, D> extends infer R
       ? R extends true
-        ? _Resolve<_ResolverOf<T>>
-        : _Resolve<_ResolverOf<T>> | undefined
+        ? _ValueOf<T>
+        : _ValueOf<T> | undefined
       : never
 
 /**
