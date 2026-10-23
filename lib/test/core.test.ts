@@ -19,7 +19,7 @@ describe('command matching', () => {
   it('returns a root group when no main command exists', () => {
     expect(match({}, ['bun', 'gitish', '--version'], 2)).toMatchObject({
       success: true,
-      value: { path: [], flags: {} },
+      value: { path: [] },
     })
   })
 

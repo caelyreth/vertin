@@ -8,8 +8,8 @@
 import { create_collector } from './collector'
 import { match } from './core'
 import { help_text } from './help'
-import { create_context } from './runtime'
-import type { _Message, App } from './types'
+import { create_context, flag_tokens } from './runtime'
+import type { _Collector, _Message, App } from './types'
 import { is_err } from './utils'
 
 // MARK: - utils
@@ -39,17 +39,23 @@ export async function run(spec: App): Promise<void> {
   }
 
   const { cmd, flags, commands } = matched.value
+  flag_tokens(flags, collector)
+  if (collect_errors(collector)) return
+
   const ctx = await create_context(spec, cmd, argv, 2, collector, {
     flags,
     commands,
     help: cmd.handler === undefined,
+    builtin: matched.value.help ? 'help' : undefined,
   })
 
-  collector.collect()
-  if (collector.has_errors()) {
-    process.exitCode = 1
+  if (ctx.builtin === 'help') {
+    process.stdout.write(
+      help_text(spec, cmd, matched.value.path, flags, argv[1] ?? ''),
+    )
     return
   }
+  if (collect_errors(collector)) return
 
   if (!cmd.handler) {
     process.stdout.write(
@@ -68,6 +74,13 @@ export async function run(spec: App): Promise<void> {
 }
 
 // MARK: - helpers
+
+function collect_errors(collector: _Collector): boolean {
+  collector.collect()
+  if (!collector.has_errors()) return false
+  process.exitCode = 1
+  return true
+}
 
 function handler_failed(reason: unknown): _Message {
   return {

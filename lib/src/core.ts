@@ -5,6 +5,7 @@
  * @copyright Yu 2026
  */
 
+import { builtin_flags } from './builtins'
 import { invalid_command } from './errors'
 import {
   extend_flags,
@@ -28,6 +29,7 @@ export interface _Match {
   readonly path: readonly string[]
   readonly commands: readonly number[]
   readonly flags: _Flags
+  readonly help?: boolean
 }
 
 // MARK: - names
@@ -171,6 +173,7 @@ interface _Route {
   flags: _Flags
   path: string[]
   commands: number[]
+  help?: boolean
 }
 
 function option_offset(
@@ -187,9 +190,18 @@ function option_offset(
 
 function select_command(
   route: _Route,
-  key: string,
+  token: string,
   offset: number,
-): _Result<undefined, _Message> {
+  names: ReadonlyMap<string, string>,
+  spec: App,
+): _Result<boolean, _Message> {
+  if (token === 'help' && spec.config?.help !== false) {
+    route.help = true
+    route.commands.push(offset)
+    return ok(true)
+  }
+  const key = names.get(token)
+  if (key === undefined) return ok(false)
   const cmd = route.sub![key]!
   const inherited = extend_flags(route.flags, merge_params(cmd).flags)
   if (is_err(inherited)) return inherited
@@ -198,7 +210,27 @@ function select_command(
   route.path.push(key)
   route.commands.push(offset)
   route.sub = cmd.sub
-  return ok(undefined)
+  return ok(true)
+}
+
+function scope_names(
+  sub: _Commands,
+  spec: App,
+): _Result<ReadonlyMap<string, string>, _Message> {
+  const names = command_names(sub)
+  if (is_err(names)) return names
+  if (spec.config?.help !== false && names.value.has('help')) {
+    return err({
+      level: 'error',
+      desc: 'Invalid command schema',
+      diag: {
+        source: 'help',
+        offset: 0,
+        markup: '`help` is reserved; disable built-in help to reclaim it',
+      },
+    })
+  }
+  return names
 }
 
 function match_subcommands(
@@ -208,7 +240,7 @@ function match_subcommands(
   route: _Route,
 ): _Result<number, _Message> {
   while (route.sub) {
-    const names = command_names(route.sub)
+    const names = scope_names(route.sub, spec)
     if (is_err(names)) return names
     const token = argv[offset]
     if (token === undefined || token === '--') break
@@ -218,10 +250,9 @@ function match_subcommands(
       offset = next
       continue
     }
-    const key = names.value.get(token)
-    if (key === undefined) break
-    const selected = select_command(route, key, offset)
+    const selected = select_command(route, token, offset, names.value, spec)
     if (is_err(selected)) return selected
+    if (!selected.value) break
     offset += 1
   }
   return ok(offset)
@@ -236,9 +267,11 @@ export function match(
   argv: readonly string[],
   offset: number = 2,
 ): _Result<_Match, _Message> {
+  const rootFlags = extend_flags(spec.flags ?? {}, builtin_flags(spec))
+  if (is_err(rootFlags)) return rootFlags
   const route: _Route = {
     sub: spec.sub,
-    flags: spec.flags ?? {},
+    flags: rootFlags.value,
     path: [],
     commands: [],
   }
@@ -255,29 +288,28 @@ export function match(
       path: route.path,
       commands: route.commands,
       flags: route.flags,
+      help: route.help,
     })
   }
-  return match_main(spec, argv, end.value, route.commands)
+  return match_main(spec, argv, end.value, route)
 }
 
 function match_main(
   spec: App,
   argv: readonly string[],
   offset: number,
-  commands: readonly number[],
+  route: _Route,
 ): _Result<_Match, _Message> {
   if (spec.main) {
-    const flags = extend_flags(
-      spec.flags ?? {},
-      merge_params(spec.main).flags,
-    )
+    const flags = extend_flags(route.flags, merge_params(spec.main).flags)
     if (is_err(flags)) return flags
     return ok({
       cmd: spec.main,
       offset,
       path: [],
-      commands,
+      commands: route.commands,
       flags: flags.value,
+      help: route.help,
     })
   }
   const token = argv[offset]
@@ -288,7 +320,8 @@ function match_main(
     cmd: { desc: spec.desc, sub: spec.sub },
     offset,
     path: [],
-    commands,
-    flags: spec.flags ?? {},
+    commands: route.commands,
+    flags: route.flags,
+    help: route.help,
   })
 }

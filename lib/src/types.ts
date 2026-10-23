@@ -572,6 +572,14 @@ export interface AppTweaks {
  */
 export interface AppConfig {
   /**
+   * Built-in `-h`, `--help` and `help` command handling. Disable to reclaim
+   * these names for application use.
+   *
+   * @default `true`
+   */
+  readonly help?: boolean
+
+  /**
    * Low-level parser behavior toggles.
    */
   readonly tweaks?: AppTweaks

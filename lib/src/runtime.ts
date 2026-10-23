@@ -5,6 +5,7 @@
  * @copyright Yu 2026
  */
 
+import { requested_builtin, type _Builtin } from './builtins'
 import { extend_flags, merge_params } from './schema'
 import type {
   _Args,
@@ -64,6 +65,7 @@ interface _RuntimeContext extends Omit<
 > {
   readonly args: Record<string, unknown>
   readonly flags: Record<string, unknown>
+  readonly builtin?: _Builtin
 }
 type _ResolverUnit = _ResolverFn | _ResolverCtor
 type _ResolverArray = readonly _ResolverFn[] | readonly _ResolverCtor[]
@@ -207,7 +209,7 @@ function resolve_raw(
 
 // MARK: - flag parsing
 
-function flag_tokens(
+export function flag_tokens(
   flags: _Flags,
   collector: _Collector,
 ): ReadonlyMap<string, string> {
@@ -1054,6 +1056,7 @@ export async function create_context(
     readonly flags?: _Flags
     readonly commands?: readonly number[]
     readonly help?: boolean
+    readonly builtin?: _Builtin
   } = {},
 ): Promise<_RuntimeContext> {
   const params = merge_params(cmd)
@@ -1073,6 +1076,10 @@ export async function create_context(
     tweaks,
     input.commands,
   )
+  const builtin = input.builtin ?? requested_builtin(app, parsed.flags)
+  if (builtin) {
+    return { args: {}, flags: {}, builtin, __internal__: { app } }
+  }
   if (input.help && parsed.args.length === 0) {
     return {
       args: {},
