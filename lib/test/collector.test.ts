@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 
 import { create_collector } from '@/collector'
+import { strip } from '@/tint'
 
 import { capture_stderr } from './shared'
 
@@ -42,11 +43,12 @@ describe('collector', () => {
       collector.collect()
       collector.collect()
 
-      expect(stderr.text()).toContain('WARN Draft name adjusted')
-      expect(stderr.text()).toContain('INFO Workspace scanned')
-      expect(stderr.text()).toContain('Expected')
-      expect(stderr.text()).toContain('Hint')
-      expect(stderr.text()).toContain('selected command')
+      const rendered = strip(stderr.text())
+      expect(rendered).toContain('WARN Draft name adjusted')
+      expect(rendered).toContain('INFO Workspace scanned')
+      expect(rendered).toContain('Expected')
+      expect(rendered).toContain('Hint')
+      expect(rendered).toContain('selected command')
       expect(stderr.chunks).toHaveLength(2)
 
       collector.log([
@@ -75,7 +77,7 @@ describe('collector', () => {
         },
         true,
       )
-      expect(stderr.text()).toContain('INFO Brief mode')
+      expect(strip(stderr.text())).toContain('INFO Brief mode')
       expect(stderr.text()).not.toContain('hidden diagnostic')
 
       collector.log({
@@ -87,7 +89,7 @@ describe('collector', () => {
           markup: 'nothing to mark',
         },
       })
-      expect(stderr.text()).toContain('WARN No source tokens')
+      expect(strip(stderr.text())).toContain('WARN No source tokens')
     } finally {
       stderr.restore()
     }
