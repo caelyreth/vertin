@@ -1,6 +1,8 @@
 import { app, args, cmd, flags } from '../../src/index'
 
 await app({
+  ver: '1.2.3',
+  desc: 'Fixture CLI',
   main: cmd(
     {
       args: args({

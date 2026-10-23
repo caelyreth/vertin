@@ -29,6 +29,7 @@ function trim_argv(argv: readonly string[]): string[] {
  */
 export async function run(spec: App): Promise<void> {
   const argv = trim_argv(Bun.argv)
+  const name = argv[1] ?? ''
   const collector = create_collector()
   const matched = match(spec, argv, 2)
 
@@ -49,9 +50,11 @@ export async function run(spec: App): Promise<void> {
     builtin: matched.value.help ? 'help' : undefined,
   })
 
-  if (ctx.builtin === 'help') {
+  if (ctx.builtin) {
     process.stdout.write(
-      help_text(spec, cmd, matched.value.path, flags, argv[1] ?? ''),
+      ctx.builtin === 'version'
+        ? `${spec.ver}\n`
+        : help_text(spec, cmd, matched.value.path, flags, name),
     )
     return
   }
@@ -59,7 +62,7 @@ export async function run(spec: App): Promise<void> {
 
   if (!cmd.handler) {
     process.stdout.write(
-      help_text(spec, cmd, matched.value.path, flags, argv[1] ?? ''),
+      help_text(spec, cmd, matched.value.path, flags, name),
     )
     return
   }

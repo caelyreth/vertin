@@ -19,6 +19,19 @@ async function invoke(argv: string[]) {
 }
 
 describe('Bun CLI subprocess', () => {
+  it('prints help and version without running the action', async () => {
+    expect(await invoke(['--version'])).toEqual({
+      stdout: '1.2.3\n',
+      stderr: '',
+      exitCode: 0,
+    })
+    const help = await invoke(['--help'])
+    expect(help.exitCode).toBe(0)
+    expect(help.stderr).toBe('')
+    expect(help.stdout).toContain('Fixture CLI')
+    expect(help.stdout).toContain('Usage:')
+    expect(help.stdout).toContain('<name>')
+  })
   it('reads actual arguments and exits successfully', async () => {
     const result = await invoke(['world', '--count=2'])
 

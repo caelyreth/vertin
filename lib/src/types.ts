@@ -580,6 +580,13 @@ export interface AppConfig {
   readonly help?: boolean
 
   /**
+   * Built-in `-V` and `--version` handling when `ver` is provided.
+   *
+   * @default `true`
+   */
+  readonly version?: boolean
+
+  /**
    * Low-level parser behavior toggles.
    */
   readonly tweaks?: AppTweaks
