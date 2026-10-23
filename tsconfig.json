@@ -16,5 +16,5 @@
     },
     "types": ["bun"]
   },
-  "include": ["lib/src", "lib/test", "*.config.ts"]
+  "include": ["lib/src", "lib/test", "examples/*/src", "*.config.ts"]
 }

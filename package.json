@@ -5,7 +5,8 @@
   "license": "MIT",
   "author": "Yu <me@iki.moe>",
   "workspaces": [
-    "lib"
+    "lib",
+    "examples/*"
   ],
   "type": "module",
   "scripts": {
