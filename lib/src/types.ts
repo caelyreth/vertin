@@ -432,6 +432,11 @@ export type HandlerContext<
  */
 type _AnyCommand = {
   /**
+   * Alternative single-token names for this command.
+   */
+  readonly alias?: _Many<string>
+
+  /**
    * Brief description of command.
    */
   readonly desc?: string
@@ -482,6 +487,11 @@ export interface Command<
   C extends _Commands = _Commands,
   P extends Snippet[] = Snippet[],
 > {
+  /**
+   * Alternative single-token names for this command.
+   */
+  readonly alias?: _Many<string>
+
   /**
    * Brief description of command.
    */
