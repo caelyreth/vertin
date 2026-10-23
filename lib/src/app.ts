@@ -1,82 +1,55 @@
 /**
  * @license MIT
- * @file Runtime entry point for Vertin applications.
+ * @file Application execution pipeline.
  * @author Yu <me@iki.moe>
  * @copyright Yu 2026
  */
 
 import { create_collector } from './collector'
-import { match } from './core'
-import { help_text } from './help'
-import { create_context, flag_tokens } from './runtime'
+import { create_scope } from './core'
+import { internal_commands } from './internal'
+import { parse } from './parser'
+import { create_context } from './runtime'
+import { prepare } from './schema'
 import type { _Collector, _Message, App } from './types'
-import { is_err } from './utils'
-
-// MARK: - utils
 
 function trim_argv(argv: readonly string[]): string[] {
   const trimmedStart = argv
     .slice(0, 2)
     .map((p) => p.replace(/[/\\]+$/, '').replace(/^.*[/\\]/, ''))
-  const remainingArgs = argv.slice(2)
-  return [...trimmedStart, ...remainingArgs]
+  return [...trimmedStart, ...argv.slice(2)]
 }
 
-// MARK: - app runner
-
 /**
- * Runs a Vertin application against the current process arguments.
+ * Prepares schemas, parses one invocation, validates its values, and
+ * executes its handler. Internal and application commands share this
+ * pipeline.
  */
 export async function run(spec: App): Promise<void> {
   const argv = trim_argv(Bun.argv)
-  const name = argv[1] ?? ''
   const collector = create_collector()
-  const matched = match(spec, argv, 2)
-
-  if (is_err(matched)) {
-    collector.log(matched.errors)
-    process.exitCode = 1
-    return
-  }
-
-  const { cmd, flags, commands } = matched.value
-  flag_tokens(flags, collector)
+  const root = prepare(spec, internal_commands(spec), collector)
   if (collect_errors(collector)) return
 
-  const ctx = await create_context(spec, cmd, argv, 2, collector, {
-    flags,
-    commands,
-    help: cmd.handler === undefined,
-    builtin: matched.value.help ? 'help' : undefined,
-  })
+  const invocation = parse(root, argv, spec.config)
+  collector.submit(invocation.messages)
 
-  if (ctx.builtin) {
-    process.stdout.write(
-      ctx.builtin === 'version'
-        ? `${spec.ver}\n`
-        : help_text(spec, cmd, matched.value.path, flags, name),
-    )
-    return
-  }
+  const scope = create_scope(
+    spec,
+    invocation.action.scope(),
+    argv[1] ?? '',
+    collector,
+  )
+  const ctx = await create_context(invocation, scope, collector)
   if (collect_errors(collector)) return
-
-  if (!cmd.handler) {
-    process.stdout.write(
-      help_text(spec, cmd, matched.value.path, flags, name),
-    )
-    return
-  }
 
   try {
-    await cmd.handler(ctx)
+    await invocation.action.command.handler(ctx)
   } catch (reason: unknown) {
-    collector.log(handler_failed(reason))
-    process.exitCode = 1
-    return
+    collector.submit(handler_failed(reason))
   }
+  collect_errors(collector)
 }
-
-// MARK: - helpers
 
 function collect_errors(collector: _Collector): boolean {
   collector.collect()

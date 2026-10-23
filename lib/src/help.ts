@@ -1,13 +1,13 @@
 /**
  * @license MIT
- * @file Generated command usage and help.
+ * @file Pure schema-driven help rendering for a command scope.
  * @author Yu <me@iki.moe>
  * @copyright Yu 2026
  */
 
 import { create_formatter, type _Formatter } from './renderer'
-import { flag_names, is_boolean, merge_params } from './schema'
-import type { _Commands, _Flags, App, Argument, Flag } from './types'
+import { flag_names, is_boolean, resolver_unit } from './schema'
+import type { _ContextScope, Argument, Flag } from './types'
 import { to_array } from './utils'
 
 function argument_label(key: string, param: Argument): string {
@@ -19,9 +19,7 @@ function argument_label(key: string, param: Argument): string {
 
 function value_label(flag: Flag): string {
   if (is_boolean(flag.resolver)) return ''
-  const resolver = Array.isArray(flag.resolver)
-    ? flag.resolver[0]
-    : flag.resolver
+  const resolver = resolver_unit(flag.resolver)
   const name =
     resolver === Number
       ? 'number'
@@ -60,62 +58,47 @@ function section(
   fmt.shift()
 }
 
-function usage_lines(
-  fmt: _Formatter,
-  base: string,
-  cmd: _Commands[string],
-  sub: _Commands | undefined,
-  flags: _Flags,
-): void {
-  fmt.line('Usage:')
-  fmt.indent()
-  const options = Object.keys(flags).length > 0 ? ' [options]' : ''
-  const argumentsText = Object.entries(merge_params(cmd).args)
+function usage_lines(fmt: _Formatter, scope: _ContextScope): void {
+  const base = [scope.name, ...scope.path].join(' ')
+  const options = Object.keys(scope.flags).length > 0 ? ' [options]' : ''
+  const argumentsText = Object.entries(scope.args)
     .map(([key, param]) => argument_label(key, param))
     .join(' ')
-  const hasChildren = Object.keys(sub ?? {}).length > 0
-  if (cmd.handler || !hasChildren) {
+  const hasChildren = Object.keys(scope.sub).length > 0
+  fmt.line('Usage:')
+  fmt.indent()
+  if (scope.cmd.handler || !hasChildren) {
     fmt.line(`${base}${options}${argumentsText ? ` ${argumentsText}` : ''}`)
   }
-  if (hasChildren) {
-    fmt.line(`${base} <command>${options}`)
-  }
+  if (hasChildren) fmt.line(`${base} <command>${options}`)
   fmt.shift()
 }
 
 /**
- * Renders the selected command from its schema, without evaluating values.
+ * Help only consumes scope metadata; it does not parse or dispatch input.
  */
-export function help_text(
-  spec: App,
-  cmd: _Commands[string],
-  path: readonly string[],
-  flags: _Flags,
-  name: string,
-): string {
+export function help_text(scope: _ContextScope): string {
   const fmt = create_formatter()
-  const params = merge_params(cmd)
-  const sub = path.length === 0 ? spec.sub : cmd.sub
-  const base = [name, ...path].join(' ')
-  const desc = path.length === 0 ? (spec.desc ?? cmd.desc) : cmd.desc
-  if (desc) {
-    fmt.line(desc)
+  if (scope.cmd.desc) {
+    fmt.line(scope.cmd.desc)
     fmt.emptyLine()
   }
-  usage_lines(fmt, base, cmd, sub, flags)
+  usage_lines(fmt, scope)
   section(
     fmt,
     'Commands',
-    Object.entries(sub ?? {}).map(([key, child]) => {
-      const alias = to_array(child.alias ?? [])
-      const label = alias.length > 0 ? `${key} (${alias.join(', ')})` : key
-      return [label, child.desc ?? '']
+    Object.entries(scope.sub).map(([key, child]) => {
+      const aliases = to_array(child.alias ?? [])
+      return [
+        aliases.length > 0 ? `${key} (${aliases.join(', ')})` : key,
+        child.desc ?? '',
+      ]
     }),
   )
   section(
     fmt,
     'Arguments',
-    Object.entries(params.args).map(([key, param]) => [
+    Object.entries(scope.args).map(([key, param]) => [
       argument_label(key, param),
       parameter_desc(param, true),
     ]),
@@ -123,7 +106,7 @@ export function help_text(
   section(
     fmt,
     'Options',
-    Object.entries(flags).map(([key, flag]) => [
+    Object.entries(scope.flags).map(([key, flag]) => [
       flag_names(key, flag).join(', ') + value_label(flag),
       parameter_desc(flag, false),
     ]),

@@ -8,6 +8,7 @@
  * @copyright Yu 2026
  */
 
+import { suggest_hint } from './suggest'
 import type { _Message } from './types'
 
 // MARK: - matching stage
@@ -19,6 +20,7 @@ export function invalid_command(
   source: readonly string[],
   offset: number,
   token: string,
+  candidates: Iterable<string> = [],
 ): _Message {
   return {
     level: 'error',
@@ -28,6 +30,7 @@ export function invalid_command(
       offset,
       markup: `\`${token}\` is not a valid command`,
       prefix: '> ',
+      hint: suggest_hint(token, candidates),
     },
   } satisfies _Message
 }

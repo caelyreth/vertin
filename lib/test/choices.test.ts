@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'bun:test'
 
 import { args, cmd, flags, snippet } from '@/helper'
-import { create_context } from '@/runtime'
 
-import { memory_collector } from './shared'
+import { context_for as create_context, memory_collector } from './shared'
 
 describe('parameter choices', () => {
   it('validates resolved scalars, arrays, fallbacks, and snippet fields', async () => {

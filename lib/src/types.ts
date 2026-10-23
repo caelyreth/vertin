@@ -359,7 +359,6 @@ export interface _Parsed<
    * Parsed flags.
    */
   readonly flags: _ParsedFlags<NonNullable<F>> &
-    Readonly<Record<string, unknown>> &
     _Merge<{
       [K in keyof P]: _ParsedFlags<NonNullable<P[K]['flags']>>
     }>
@@ -408,20 +407,31 @@ export type HandlerContext<
   P extends Snippet[],
 > = _Parsed<A, F, P> & {
   /**
-   * Internal context for the command.
-   *
-   * NOTE: Those APIs may be **changed without any notice**.
-   *
-   * @private
+   * Internal command scope. This is accessible for inspection and internal
+   * commands, but is not a stable extension API.
    */
-  readonly __internal__: {
-    /**
-     * Access the whole application specification.
-     *
-     * @private
-     */
-    readonly app: App
-  }
+  readonly _: _ContextScope
+}
+
+/**
+ * Schema and diagnostics available to the current command. `args` and
+ * `flags` are definitions; parsed values remain on the outer context.
+ */
+export interface _ContextScope {
+  readonly app: App
+  readonly cmd: _Commands[string]
+  readonly name: string
+  readonly path: readonly string[]
+  readonly args: _Args
+  readonly flags: _Flags
+  readonly sub: _Commands
+  readonly collector: _Collector
+  /**
+   * Looks up a canonical or aliased path relative to this scope.
+   */
+  readonly resolve: (
+    path: readonly string[],
+  ) => _Result<_ContextScope, _Message>
 }
 
 /**
@@ -614,9 +624,10 @@ export interface App<C extends _Commands = _Commands> {
   readonly flags?: _Flags
 
   /**
-   * Main command of the app.
+   * Main command of the app. Its flags join the root scope and are
+   * inherited by subcommands; its arguments remain local.
    */
-  readonly main?: Command
+  readonly main?: _Commands[string]
 
   /**
    * Sub-commands of the app.

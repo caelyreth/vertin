@@ -2,10 +2,9 @@ import { describe, expect, it } from 'bun:test'
 
 import { create_collector } from '@/collector'
 import { args, check, cmd, flags, snippet } from '@/helper'
-import { create_context } from '@/runtime'
 import type { _Collector } from '@/types'
 
-import { memory_collector } from './shared'
+import { context_for as create_context, memory_collector } from './shared'
 
 function quiet_collector(): _Collector {
   const collector = create_collector()
@@ -309,7 +308,7 @@ describe('runtime context construction', () => {
         flags: flags({
           all: { alias: 'a', resolver: Boolean, fallback: false },
           long: { alias: 'l', resolver: Boolean, fallback: false },
-          human: { alias: 'h', resolver: Boolean, fallback: false },
+          human: { alias: 'H', resolver: Boolean, fallback: false },
           output: { alias: 'o', fallback: 'stdout' },
         }),
       },
@@ -320,7 +319,7 @@ describe('runtime context construction', () => {
     const ctx = await create_context(
       { sub: { list } },
       list,
-      ['bun', 'fs', 'list', '-alh'],
+      ['bun', 'fs', 'list', '-alH'],
       3,
       collector,
     )

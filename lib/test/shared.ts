@@ -1,6 +1,11 @@
 import { run } from '@/app'
 import { create_collector } from '@/collector'
-import type { _Collector, _Many, _Message, App } from '@/types'
+import { create_scope } from '@/core'
+import { internal_commands } from '@/internal'
+import { parse } from '@/parser'
+import { create_context } from '@/runtime'
+import { prepare } from '@/schema'
+import type { _Collector, _Commands, _Many, _Message, App } from '@/types'
 
 export interface _CapturedOutput {
   readonly chunks: string[]
@@ -62,6 +67,24 @@ export async function invoke_app(spec: App, argv: readonly string[]) {
     stderr.restore()
     stdout.restore()
   }
+}
+
+export async function context_for(
+  app: App,
+  cmd: _Commands[string],
+  argv: readonly string[],
+  offset: number,
+  collector: _Collector,
+) {
+  const spec: App = { ...app, main: cmd, sub: undefined }
+  const node = prepare(spec, internal_commands(spec), collector)
+  const invocation = parse(node, argv, spec.config, offset)
+  collector.submit(invocation.messages)
+  return create_context(
+    invocation,
+    create_scope(app, invocation.action.scope(), argv[1] ?? '', collector),
+    collector,
+  )
 }
 
 export function quiet_collector(): _Collector {

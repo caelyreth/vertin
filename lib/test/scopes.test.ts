@@ -18,8 +18,11 @@ describe('flag scopes', () => {
           verbose: { alias: 'v', resolver: Boolean, fallback: false },
         }),
       })
+      const directory = snippet({
+        flags: flags({ cwd: { alias: 'C', fallback: '.' } }),
+      })
       const add = cmd(
-        { use: [common], args: args({ name: {} }) },
+        { use: [common, directory], args: args({ name: {} }) },
         (ctx) => {
           const verbose: boolean = ctx.flags.verbose
           received = { name: ctx.args.name, verbose, cwd: ctx.flags.cwd }
@@ -27,7 +30,7 @@ describe('flag scopes', () => {
       )
       const remote = cmd(
         {
-          flags: flags({ cwd: { alias: 'C', fallback: '.' } }),
+          use: [directory],
           sub: { add },
         },
         () => {},
